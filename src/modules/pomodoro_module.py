@@ -6,7 +6,6 @@ Implements a customizable pomodoro timer with module integration.
 import tkinter as tk
 from tkinter import ttk, messagebox
 import time
-import threading
 from datetime import datetime
 import json
 
@@ -35,6 +34,7 @@ class PomodoroModule:
         self.data_manager = data_manager
         self.data = data_manager.data
         self.theme = theme
+        self.root = app.root
 
         # Initialize pomodoro data if not present
         if "pomodoro" not in self.data:
@@ -753,10 +753,76 @@ class PomodoroModule:
         self.pause_button.config(state=tk.NORMAL)
         self.reset_button.config(state=tk.NORMAL)
 
-        # Start timer thread
-        self.current_timer = threading.Thread(target=self.run_timer)
-        self.current_timer.daemon = True
-        self.current_timer.start()
+        # Start timer using Tkinter's after method instead of threading
+        self.update_timer()
+
+    def update_timer(self):
+        """Update timer using Tkinter's after method (no threading)"""
+        if not self.timer_running or self.timer_paused:
+            return
+
+        if self.time_left > 0:
+            # Calculate minutes and seconds
+            minutes, seconds = divmod(self.time_left, 60)
+
+            # Update the timer display
+            time_str = f"{minutes:02d}:{seconds:02d}"
+            self.timer_label.config(text=time_str)
+
+            # Update progress bar
+            elapsed = self.progress_bar["maximum"] - self.time_left
+            self.progress_bar["value"] = elapsed
+
+            # Decrement time
+            self.time_left -= 1
+
+            # Schedule the next update after 1000ms (1 second)
+            self.current_timer = self.root.after(1000, self.update_timer)
+        else:
+            # Timer completed
+            self.timer_running = False
+            self.timer_label.config(text="00:00")
+            self.progress_bar["value"] = self.progress_bar["maximum"]
+
+            # Handle timer completion based on mode
+            if not self.is_break:
+                # Work session completed
+                self.complete_pomodoro()
+
+                # Increment pomodoro count
+                self.pomodoro_count += 1
+
+                # Determine next break type
+                self.is_break = True
+                if (
+                    self.pomodoro_count % self.data["pomodoro"]["long_break_interval"]
+                    == 0
+                ):
+                    self.is_long_break = True
+                    self.status_label.config(text="Time for a long break!")
+                else:
+                    self.is_long_break = False
+                    self.status_label.config(text="Time for a short break!")
+            else:
+                # Break completed
+                self.is_break = False
+                self.status_label.config(
+                    text="Break finished. Ready for next pomodoro!"
+                )
+
+            # Auto-start next session if enabled
+            if self.data["pomodoro"]["auto_start"]:
+                self.reset_timer_display()
+                self.start_timer()
+            else:
+                # Reset for manual start
+                self.reset_timer_display()
+                self.start_button.config(state=tk.NORMAL)
+                self.pause_button.config(state=tk.DISABLED)
+                self.reset_button.config(state=tk.DISABLED)
+
+            # Show notification
+            self.show_notification()
 
     def pause_timer(self):
         """Pause the running timer."""
@@ -779,7 +845,12 @@ class PomodoroModule:
             self.start_button.config(state=tk.DISABLED)
 
     def reset_timer(self):
-        """Reset the timer to initial state."""
+        """Reset the timer to initial states."""
+        # Cancel any pending timer updates
+        if self.current_timer:
+            self.root.after_cancel(self.current_timer)
+            self.current_timer = None
+
         # Stop the current timer
         self.timer_running = False
         self.timer_paused = False
@@ -814,132 +885,57 @@ class PomodoroModule:
         if hasattr(self, "progress_bar") and self.progress_bar:
             self.progress_bar["value"] = 0
 
-    def run_timer(self):
-        """Run the timer countdown in a separate thread."""
-        initial_time = self.time_left
-
-        while self.timer_running and self.time_left > 0:
-            if not self.timer_paused:
-                # Calculate minutes and seconds
-                minutes, seconds = divmod(self.time_left, 60)
-
-                # Update the timer display
-                time_str = f"{minutes:02d}:{seconds:02d}"
-                try:
-                    # Update UI in main thread
-                    self.timer_label.config(text=time_str)
-
-                    # Update progress bar
-                    elapsed = initial_time - self.time_left
-                    self.progress_bar["value"] = elapsed
-                except:
-                    # In case the UI has been destroyed
-                    break
-
-                # Decrement time and sleep
-                self.time_left -= 1
-                time.sleep(1)
-            else:
-                # When paused, just wait
-                time.sleep(0.1)
-
-        # Check if timer completed naturally (not reset)
-        if self.timer_running and self.time_left <= 0:
-            # Timer completed
-            self.timer_running = False
-
-            # Update UI in main thread
-            try:
-                self.timer_label.config(text="00:00")
-                self.progress_bar["value"] = initial_time
-
-                # Handle timer completion based on mode
-                if not self.is_break:
-                    # Work session completed
-                    self.complete_pomodoro()
-
-                    # Increment pomodoro count
-                    self.pomodoro_count += 1
-
-                    # Determine next break type
-                    self.is_break = True
-                    if (
-                        self.pomodoro_count
-                        % self.data["pomodoro"]["long_break_interval"]
-                        == 0
-                    ):
-                        self.is_long_break = True
-                        self.status_label.config(text="Time for a long break!")
-                    else:
-                        self.is_long_break = False
-                        self.status_label.config(text="Time for a short break!")
-                else:
-                    # Break completed
-                    self.is_break = False
-                    self.status_label.config(
-                        text="Break finished. Ready for next pomodoro!"
-                    )
-
-                # Auto-start next session if enabled
-                if self.data["pomodoro"]["auto_start"]:
-                    self.reset_timer_display()
-                    self.start_timer()
-                else:
-                    # Reset for manual start
-                    self.reset_timer_display()
-                    self.start_button.config(state=tk.NORMAL)
-                    self.pause_button.config(state=tk.DISABLED)
-                    self.reset_button.config(state=tk.DISABLED)
-
-                # Show notification
-                self.show_notification()
-
-            except:
-                # In case the UI has been destroyed
-                pass
-
     def complete_pomodoro(self):
         """Record the completion of a pomodoro."""
-        # Increment total pomodoro count
-        self.data["pomodoro"]["completed_pomodoros"] += 1
+        try:
+            # Increment total pomodoro count
+            self.data["pomodoro"]["completed_pomodoros"] += 1
 
-        # Update daily pomodoro count
-        today = datetime.now().strftime("%Y-%m-%d")
-        daily_pomodoros = self.data["pomodoro"].get("daily_pomodoros", {})
-        daily_pomodoros[today] = daily_pomodoros.get(today, 0) + 1
-        self.data["pomodoro"]["daily_pomodoros"] = daily_pomodoros
+            # Update daily pomodoro count
+            today = datetime.now().strftime("%Y-%m-%d")
+            daily_pomodoros = self.data["pomodoro"].get("daily_pomodoros", {})
+            daily_pomodoros[today] = daily_pomodoros.get(today, 0) + 1
+            self.data["pomodoro"]["daily_pomodoros"] = daily_pomodoros
 
-        # Update completed today count for the UI
-        self.completed_today = daily_pomodoros[today]
+            # Update completed today count for the UI
+            self.completed_today = daily_pomodoros[today]
 
-        # Update linked modules if any
-        self.update_linked_modules()
+            # Update linked modules if any
+            self.update_linked_modules()
 
-        # Save data
-        self.data_manager.save_data()
+            # Save data
+            self.data_manager.save_data()
+        except Exception as e:
+            print(f"Error completing pomodoro: {e}")
+            messagebox.showerror("Error", f"Could not complete pomodoro: {e}")
 
     def update_linked_modules(self):
         """Update progress for linked skill modules."""
-        linked_modules = self.data["pomodoro"].get("linked_modules", {})
-        points_per_pomodoro = self.data["pomodoro"].get("points_per_pomodoro", 10)
+        try:
+            linked_modules = self.data["pomodoro"].get("linked_modules", {})
+            points_per_pomodoro = self.data["pomodoro"].get("points_per_pomodoro", 10)
 
-        for module_key, is_linked in linked_modules.items():
-            if is_linked and module_key in self.data:
-                # Add points to the module
-                self.data[module_key]["points"] += points_per_pomodoro
+            for module_key, is_linked in linked_modules.items():
+                if is_linked and module_key in self.data:
+                    # Add points to the module
+                    self.data[module_key]["points"] += points_per_pomodoro
 
-                # Update last activity date
-                today = datetime.now().strftime("%Y-%m-%d")
-                self.data[module_key]["last_activity"] = today
+                    # Update last activity date
+                    today = datetime.now().strftime("%Y-%m-%d")
+                    self.data[module_key]["last_activity"] = today
 
-                # Update streak if not already updated today
-                last_streak_update = self.data[module_key].get("last_streak_update", "")
-                if last_streak_update != today:
-                    self.data[module_key]["streak"] += 1
-                    self.data[module_key]["last_streak_update"] = today
+                    # Update streak if not already updated today
+                    last_streak_update = self.data[module_key].get(
+                        "last_streak_update", ""
+                    )
+                    if last_streak_update != today:
+                        self.data[module_key]["streak"] += 1
+                        self.data[module_key]["last_streak_update"] = today
 
-                # Check for level up
-                self.check_level_up(module_key)
+                    # Check for level up
+                    self.check_level_up(module_key)
+        except Exception as e:
+            print(f"Error updating linked modules: {e}")
 
     def check_level_up(self, module_key):
         """
@@ -948,18 +944,21 @@ class PomodoroModule:
         Args:
             module_key: The module to check for level up
         """
-        current_level = self.data[module_key]["level"]
-        current_points = self.data[module_key]["points"]
+        try:
+            current_level = self.data[module_key]["level"]
+            current_points = self.data[module_key]["points"]
 
-        # Simple level up formula: next level requires current_level * 100 points
-        points_for_next_level = current_level * 100
+            # Simple level up formula: next level requires current_level * 100 points
+            points_for_next_level = current_level * 100
 
-        if current_points >= points_for_next_level:
-            # Level up!
-            self.data[module_key]["level"] += 1
+            if current_points >= points_for_next_level:
+                # Level up!
+                self.data[module_key]["level"] += 1
 
-            # Reset points (optional - can be changed to keep excess points)
-            self.data[module_key]["points"] = current_points - points_for_next_level
+                # Reset points (optional - can be changed to keep excess points)
+                self.data[module_key]["points"] = current_points - points_for_next_level
+        except Exception as e:
+            print(f"Error checking level up for {module_key}: {e}")
 
     def show_notification(self):
         """Show a desktop notification."""
