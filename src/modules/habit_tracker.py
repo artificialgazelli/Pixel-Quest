@@ -3,6 +3,8 @@ Habit tracker module for the Pixel Quest application.
 Manages daily habits, check-ins, and streak tracking with various frequency options.
 """
 
+import sys
+import os
 import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import datetime, timedelta
