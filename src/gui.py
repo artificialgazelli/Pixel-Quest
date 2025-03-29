@@ -4,7 +4,7 @@ Main GUI components for the Pixel Quest application.
 
 import tkinter as tk
 from tkinter import ttk
-from datetime import datetime
+from datetime import datetime, timedelta
 from src.theme import PixelTheme
 from src.data_manager import DataManager
 from src.modules.art_module import ArtModule
@@ -33,7 +33,7 @@ class QuestGame:
         """
         self.root = root
         self.root.title("Pixel Quest - Skill Development")
-        self.root.geometry("800x500")
+        self.root.geometry("800x600")  # Increased height for new functionality
 
         # Set up pixel art theme
         self.theme = PixelTheme(self.root)
@@ -100,15 +100,20 @@ class QuestGame:
 
         # Create tabs
         modules_tab = tk.Frame(tab_control, bg=self.theme.bg_color)
+        rewards_tab = tk.Frame(tab_control, bg=self.theme.bg_color)
         stats_tab = tk.Frame(tab_control, bg=self.theme.bg_color)
         settings_tab = tk.Frame(tab_control, bg=self.theme.bg_color)
 
         tab_control.add(modules_tab, text="Modules")
+        tab_control.add(rewards_tab, text="Rewards")
         tab_control.add(stats_tab, text="Statistics")
         tab_control.add(settings_tab, text="Settings")
 
         # === MODULES TAB ===
         self.create_modules_tab(modules_tab)
+
+        # === REWARDS TAB ===
+        self.rewards_module.create_rewards_tab(rewards_tab)
 
         # === STATISTICS TAB ===
         self.statistics_module.create_statistics_tab(stats_tab)
@@ -125,7 +130,7 @@ class QuestGame:
         """
         # Module buttons frame - use pack instead of grid for better centering
         buttons_frame = tk.Frame(parent, bg=self.theme.bg_color)
-        buttons_frame.pack(pady=20, fill=tk.BOTH, expand=True)
+        buttons_frame.pack(pady=10, fill=tk.BOTH, expand=True)
 
         # Center container frame for the modules
         center_frame = tk.Frame(buttons_frame, bg=self.theme.bg_color)
@@ -252,7 +257,6 @@ class QuestGame:
         )
         french_streak.pack()
 
-        # Add after the French module button in create_modules_tab() method
         # Dissertation module button
         diss_frame = tk.Frame(
             center_frame,
@@ -293,172 +297,526 @@ class QuestGame:
         )
         diss_streak.pack()
 
-        # Habit Tracker
-        habit_frame = tk.Frame(parent, bg=self.theme.bg_color, relief=tk.RIDGE, bd=3)
-        habit_frame.pack(pady=10, fill=tk.X)
-
-        habit_label = tk.Label(
-            habit_frame,
-            text="Habit Tracker",
+        # Daily Dashboard section - combines Habits and ToDo
+        daily_dashboard = tk.LabelFrame(
+            parent,
+            text="Daily Dashboard",
             font=self.theme.pixel_font,
             bg=self.theme.bg_color,
-            fg=self.theme.habit_color,  # Use theme color
+            fg=self.theme.text_color,
+            padx=10,
+            pady=10,
+            relief=tk.RIDGE,
+            bd=3,
         )
-        habit_label.pack(pady=5)
+        daily_dashboard.pack(fill=tk.BOTH, expand=True, pady=10, padx=20)
 
-        # Get habit completion statistics for today
-        habits = self.data.get("habits", {})
-        daily_habits = habits.get("daily_habits", []) + habits.get("custom_habits", [])
+        # Create a two-column layout for habits and tasks
+        dashboard_frame = tk.Frame(daily_dashboard, bg=self.theme.bg_color)
+        dashboard_frame.pack(fill=tk.BOTH, expand=True)
 
-        # Count active habits
-        active_habits = [h for h in daily_habits if h.get("active", True)]
-        total_active = len(active_habits)
+        # Left column - Daily Habits
+        habits_frame = tk.LabelFrame(
+            dashboard_frame,
+            text="Today's Habits",
+            font=self.theme.pixel_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.habit_color,
+            padx=5,
+            pady=5,
+        )
+        habits_frame.grid(row=0, column=0, padx=10, pady=5, sticky="nsew")
 
-        # Count completed habits for today
+        # Display today's habits
+        self.display_todays_habits(habits_frame)
+
+        # Right column - Daily Tasks
+        tasks_frame = tk.LabelFrame(
+            dashboard_frame,
+            text="Today's Tasks",
+            font=self.theme.pixel_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.todo_color,
+            padx=5,
+            pady=5,
+        )
+        tasks_frame.grid(row=0, column=1, padx=10, pady=5, sticky="nsew")
+
+        # Display today's tasks
+        self.display_todays_tasks(tasks_frame)
+
+        # Set weight to make columns equal width
+        dashboard_frame.columnconfigure(0, weight=1)
+        dashboard_frame.columnconfigure(1, weight=1)
+
+        # Bottom controls - quick access buttons
+        controls_frame = tk.Frame(daily_dashboard, bg=self.theme.bg_color)
+        controls_frame.pack(fill=tk.X, pady=10)
+
+        # Habit Tracker button
+        habit_button = self.theme.create_pixel_button(
+            controls_frame,
+            "Open Habit Tracker",
+            lambda: self.show_module("habits"),
+            color=self.theme.habit_color,
+        )
+        habit_button.pack(side=tk.LEFT, padx=20)
+
+        # To Do List button
+        todo_button = self.theme.create_pixel_button(
+            controls_frame,
+            "Open To Do List",
+            lambda: self.show_module("todo"),
+            color=self.theme.todo_color,
+        )
+        todo_button.pack(side=tk.LEFT, padx=20)
+
+        # Add New Task button
+        new_task_button = self.theme.create_pixel_button(
+            controls_frame,
+            "Add New Task",
+            lambda: self.todo_list.todo_tab.add_new_task(),
+            color="#4CAF50",
+        )
+        new_task_button.pack(side=tk.RIGHT, padx=20)
+
+        # Add New Habit button
+        new_habit_button = self.theme.create_pixel_button(
+            controls_frame,
+            "Add New Habit",
+            lambda: self.habit_tracker.habit_tab.add_new_habit(),
+            color="#2196F3",
+        )
+        new_habit_button.pack(side=tk.RIGHT, padx=20)
+
+    def display_todays_habits(self, parent):
+        """
+        Display today's habits with checkboxes.
+
+        Args:
+            parent: Parent widget to place the habits
+        """
+        # Get today's date
         today = datetime.now().date().strftime("%Y-%m-%d")
-        completed_today = sum(
-            1 for h in active_habits if today in h.get("completed_dates", [])
+
+        # Get habits that are active for today
+        habits = self.data.get("habits", {})
+        all_habits = []
+
+        # Combine daily and custom habits
+        for habit_type in ["daily_habits", "custom_habits"]:
+            for habit in habits.get(habit_type, []):
+                if habit.get("active", True):
+                    all_habits.append(habit)
+
+        # Filter habits that should be active today
+        todays_habits = []
+        for habit in all_habits:
+            frequency = habit.get("frequency", "daily")
+            if frequency == "daily":
+                todays_habits.append(habit)
+            elif frequency == "weekly":
+                # Check if today's weekday is in specific days
+                day_of_week = datetime.now().weekday()
+                # Convert to 0=Sunday format to match the app's convention
+                day_of_week = (day_of_week + 1) % 7
+                if day_of_week in habit.get("specific_days", [0, 1, 2, 3, 4, 5, 6]):
+                    todays_habits.append(habit)
+            elif frequency == "interval":
+                # This would require more complex logic to determine if today falls in the interval
+                # For simplicity, we'll include it if it's not completed yet today
+                if today not in habit.get("completed_dates", []):
+                    todays_habits.append(habit)
+
+        # Sort habits by completion status (incomplete first)
+        todays_habits.sort(key=lambda h: today in h.get("completed_dates", []))
+
+        if not todays_habits:
+            tk.Label(
+                parent,
+                text="No habits for today.",
+                font=self.theme.small_font,
+                bg=self.theme.bg_color,
+                fg=self.theme.text_color,
+            ).pack(pady=20)
+            return
+
+        # Create a scrollframe if there are many habits
+        canvas = tk.Canvas(parent, bg=self.theme.bg_color, highlightthickness=0)
+        scrollbar = ttk.Scrollbar(parent, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg=self.theme.bg_color)
+
+        scrollable_frame.bind(
+            "<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
         )
 
-        # Calculate completion percentage
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side="left", fill="both", expand=True, padx=5, pady=5)
+        scrollbar.pack(side="right", fill="y")
+
+        # Category colors for better visual organization
+        category_colors = {}
+        for category in habits.get("categories", []):
+            category_colors[category["name"]] = category["color"]
+
+        # Display each habit with a checkbox
+        for i, habit in enumerate(todays_habits):
+            # Row background alternates for better readability
+            row_bg = (
+                self.theme.bg_color
+                if i % 2 == 0
+                else self.theme.darken_color(self.theme.bg_color)
+            )
+
+            # Get category and color
+            category = habit.get("category", "Personal")
+            category_color = category_colors.get(category, self.theme.habit_color)
+
+            # Create habit row
+            habit_frame = tk.Frame(scrollable_frame, bg=row_bg, pady=2)
+            habit_frame.pack(fill=tk.X)
+
+            # Check if completed today
+            completed = today in habit.get("completed_dates", [])
+
+            # Checkbox for completion status
+            if completed:
+                status_btn = tk.Button(
+                    habit_frame,
+                    text="✓",
+                    font=self.theme.small_font,
+                    bg="#4CAF50",  # Green for completed
+                    fg="white",
+                    width=2,
+                    relief=tk.FLAT,
+                    command=lambda h=habit["name"]: self.toggle_habit_completion(h),
+                )
+            else:
+                status_btn = tk.Button(
+                    habit_frame,
+                    text="☐",
+                    font=self.theme.small_font,
+                    bg=self.theme.primary_color,
+                    fg=self.theme.text_color,
+                    width=2,
+                    relief=tk.FLAT,
+                    command=lambda h=habit["name"]: self.toggle_habit_completion(h),
+                )
+            status_btn.pack(side=tk.LEFT, padx=5)
+
+            # Category color indicator
+            color_indicator = tk.Frame(
+                habit_frame, bg=category_color, width=3, height=20
+            )
+            color_indicator.pack(side=tk.LEFT, padx=2)
+
+            # Habit icon and name
+            habit_label = tk.Label(
+                habit_frame,
+                text=f"{habit.get('icon', '📋')} {habit['name']}",
+                font=self.theme.small_font,
+                bg=row_bg,
+                fg=self.theme.text_color if not completed else "#888888",
+                anchor="w",
+            )
+            habit_label.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+
+            # Streak display
+            streak_label = tk.Label(
+                habit_frame,
+                text=f"🔥 {habit.get('streak', 0)}",
+                font=self.theme.small_font,
+                bg=row_bg,
+                fg="#FF5722",
+                width=5,
+            )
+            streak_label.pack(side=tk.RIGHT, padx=5)
+
+        # Display habit completion summary
+        completed_count = sum(
+            1 for h in todays_habits if today in h.get("completed_dates", [])
+        )
+        total_count = len(todays_habits)
         completion_pct = (
-            int((completed_today / total_active) * 100) if total_active > 0 else 0
+            int((completed_count / total_count) * 100) if total_count > 0 else 0
         )
 
-        # Display habit completion status
-        status_color = (
-            "#4CAF50"
+        summary_frame = tk.Frame(parent, bg=self.theme.bg_color)
+        summary_frame.pack(fill=tk.X, pady=5)
+
+        summary_label = tk.Label(
+            summary_frame,
+            text=f"Completed: {completed_count}/{total_count} ({completion_pct}%)",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg="#4CAF50"
             if completion_pct >= 80
             else "#FFC107"
             if completion_pct >= 50
-            else "#F44336"
+            else "#F44336",
         )
+        summary_label.pack(pady=5)
 
-        habit_status_label = tk.Label(
-            habit_frame,
-            text=f"Today's completion: {completed_today}/{total_active} habits ({completion_pct}%)",
-            font=self.theme.small_font,
-            bg=self.theme.bg_color,
-            fg=status_color,
-        )
-        habit_status_label.pack(pady=5)
-
-        # Create a simple progress bar
-        progress_frame = tk.Frame(habit_frame, bg=self.theme.bg_color)
-        progress_frame.pack(fill=tk.X, padx=20, pady=5)
-
-        # Use a fixed width for the progress bar to avoid the issue with winfo_reqwidth returning 1
-        total_width = 300
-        progress_width = int((completion_pct / 100) * total_width)
-
-        progress_bg = tk.Frame(
-            progress_frame,
-            bg=self.theme.darken_color(self.theme.primary_color),
-            height=10,
-            width=total_width,
-        )
-        progress_bg.pack(pady=5)
-
-        progress_bar = tk.Frame(
-            progress_bg,
-            bg=status_color,
-            height=10,
-            width=progress_width,
-        )
-        progress_bar.place(x=0, y=0)
-
-        # Open Habit Tracker button
-        habit_button = self.theme.create_pixel_button(
-            habit_frame,
-            "Open Habit Tracker",
-            lambda: self.show_module("habits"),
-            color=self.theme.habit_color,  # Use theme color
-        )
-        habit_button.pack(pady=5)
-
-        # Rewards
-        rewards_button = self.theme.create_pixel_button(
-            parent, "View Rewards", self.rewards_module.show_rewards, color="#E91E63"
-        )
-        rewards_button.pack(pady=5)
-
-        # To Do List
-        todo_frame = tk.Frame(parent, bg=self.theme.bg_color, relief=tk.RIDGE, bd=3)
-        todo_frame.pack(pady=10, fill=tk.X)
-
-        todo_label = tk.Label(
-            todo_frame,
-            text="To Do List",
-            font=self.theme.pixel_font,
-            bg=self.theme.bg_color,
-            fg=self.theme.todo_color,  # Use theme color
-        )
-        todo_label.pack(pady=5)
-
-        # Get task statistics
-        tasks = self.data.get("todo", {}).get("tasks", [])
-        active_tasks = [t for t in tasks if t.get("status") == "active"]
-        total_tasks = len(active_tasks)
-
-        # Count overdue tasks
-        today = datetime.now().date()
-        overdue_tasks = sum(
-            1
-            for t in active_tasks
-            if t.get("due_date")
-            and datetime.strptime(t.get("due_date"), "%Y-%m-%d").date() < today
-        )
-
-        # Count tasks due today
-        due_today = sum(
-            1
-            for t in active_tasks
-            if t.get("due_date")
-            and datetime.strptime(t.get("due_date"), "%Y-%m-%d").date() == today
-        )
-
-        # Display task status
-        task_status_text = f"Active tasks: {total_tasks} | Due today: {due_today}"
-        if overdue_tasks > 0:
-            task_status_text += f" | Overdue: {overdue_tasks}"
-
-        task_status_label = tk.Label(
-            todo_frame,
-            text=task_status_text,
-            font=self.theme.small_font,
-            bg=self.theme.bg_color,
-            fg="#F44336" if overdue_tasks > 0 else self.theme.text_color,
-        )
-        task_status_label.pack(pady=5)
-
-        # Open To Do List button
-        todo_button = self.theme.create_pixel_button(
-            todo_frame,
-            "Open To Do List",
-            lambda: self.show_module("todo"),
-            color=self.theme.todo_color,  # Use theme color
-        )
-        todo_button.pack(pady=5)
-
-    def show_module(self, module_name):
+    def display_todays_tasks(self, parent):
         """
-        Show the selected module interface.
+        Display today's tasks with checkboxes.
 
         Args:
-            module_name: Name of the module to show ('art', 'korean', 'french', 'diss', or 'habits')
+            parent: Parent widget to place the tasks
         """
-        self.clear_frame()
+        # Get today's date
+        today = datetime.now().date().strftime("%Y-%m-%d")
 
-        # Map module names to their corresponding modules
-        modules = {
-            "art": self.art_module,
-            "korean": self.korean_module,
-            "french": self.french_module,
-            "diss": self.diss_module,
-            "habits": self.habit_tracker,
-            "todo": self.todo_list,
-        }
+        # Get tasks due today or overdue
+        tasks = self.data.get("todo", {}).get("tasks", [])
+        active_tasks = [task for task in tasks if task.get("status") == "active"]
 
-        # Display the selected module
-        if module_name in modules:
-            modules[module_name].show_module(self.main_frame)
+        # Filter tasks due today or overdue
+        todays_tasks = []
+        for task in active_tasks:
+            due_date = task.get("due_date")
+            if due_date:
+                task_date = datetime.strptime(due_date, "%Y-%m-%d").date()
+                today_date = datetime.now().date()
+                if task_date <= today_date:
+                    todays_tasks.append(task)
+
+        # Sort tasks: overdue first, then by priority (high, medium, low)
+        priority_map = {"high": 0, "medium": 1, "low": 2, None: 3}
+
+        def task_sort_key(task):
+            due_date = datetime.strptime(
+                task.get("due_date", "9999-12-31"), "%Y-%m-%d"
+            ).date()
+            priority_value = priority_map.get(task.get("priority"))
+            return (due_date, priority_value)
+
+        todays_tasks.sort(key=task_sort_key)
+
+        if not todays_tasks:
+            tk.Label(
+                parent,
+                text="No tasks for today.",
+                font=self.theme.small_font,
+                bg=self.theme.bg_color,
+                fg=self.theme.text_color,
+            ).pack(pady=20)
+            return
+
+        # Create a scrollframe if there are many tasks
+        canvas = tk.Canvas(parent, bg=self.theme.bg_color, highlightthickness=0)
+        scrollbar = ttk.Scrollbar(parent, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg=self.theme.bg_color)
+
+        scrollable_frame.bind(
+            "<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side="left", fill="both", expand=True, padx=5, pady=5)
+        scrollbar.pack(side="right", fill="y")
+
+        # Get group colors
+        group_colors = {}
+        for group in self.data["todo"].get("groups", []):
+            group_colors[group["name"]] = group["color"]
+
+        # Display each task with a checkbox
+        for i, task in enumerate(todays_tasks):
+            # Row background alternates for better readability
+            row_bg = (
+                self.theme.bg_color
+                if i % 2 == 0
+                else self.theme.darken_color(self.theme.bg_color)
+            )
+
+            # Get group and color
+            group = task.get("group", "")
+            group_color = group_colors.get(group, "#999999")
+
+            # Get priority color
+            priority = task.get("priority", "")
+            priority_colors = {
+                "high": "#F44336",  # Red
+                "medium": "#FF9800",  # Orange
+                "low": "#4CAF50",  # Green
+            }
+            priority_color = priority_colors.get(priority, self.theme.text_color)
+
+            # Create task row
+            task_frame = tk.Frame(scrollable_frame, bg=row_bg, pady=2)
+            task_frame.pack(fill=tk.X)
+
+            # Checkbox for completion
+            status_btn = tk.Button(
+                task_frame,
+                text="☐",
+                font=self.theme.small_font,
+                bg=self.theme.primary_color,
+                fg=self.theme.text_color,
+                width=2,
+                relief=tk.FLAT,
+                command=lambda t=task["id"]: self.complete_task(t),
+            )
+            status_btn.pack(side=tk.LEFT, padx=5)
+
+            # Priority indicator
+            if priority == "high":
+                priority_indicator = tk.Label(
+                    task_frame,
+                    text="⚑",
+                    font=self.theme.small_font,
+                    bg=row_bg,
+                    fg=priority_color,
+                )
+                priority_indicator.pack(side=tk.LEFT)
+
+            # Task title
+            task_label = tk.Label(
+                task_frame,
+                text=task.get("title", ""),
+                font=self.theme.small_font,
+                bg=row_bg,
+                fg=self.theme.text_color,
+                anchor="w",
+            )
+            task_label.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+
+            # Due date with color coding
+            due_date = task.get("due_date", "")
+            if due_date:
+                try:
+                    due_date_obj = datetime.strptime(due_date, "%Y-%m-%d").date()
+                    today_date = datetime.now().date()
+
+                    # Determine date color based on due date
+                    if due_date_obj < today_date:
+                        date_color = "#F44336"  # Red for overdue
+                        date_text = f"⚠️ {due_date_obj.strftime('%m/%d')}"
+                    elif due_date_obj == today_date:
+                        date_color = "#FF9800"  # Orange for today
+                        date_text = f"Today"
+                    else:
+                        date_color = self.theme.text_color
+                        date_text = due_date_obj.strftime("%m/%d")
+
+                    date_label = tk.Label(
+                        task_frame,
+                        text=date_text,
+                        font=self.theme.small_font,
+                        bg=row_bg,
+                        fg=date_color,
+                    )
+                    date_label.pack(side=tk.RIGHT, padx=5)
+                except ValueError:
+                    pass
+
+            # Group indicator (small colored circle)
+            group_frame = tk.Frame(task_frame, bg=row_bg)
+            group_frame.pack(side=tk.RIGHT, padx=5)
+
+            group_indicator = tk.Frame(group_frame, bg=group_color, width=10, height=10)
+            group_indicator.pack(side=tk.LEFT)
+
+            group_label = tk.Label(
+                group_frame,
+                text=group,
+                font=self.theme.small_font,
+                bg=row_bg,
+                fg=self.theme.text_color,
+            )
+            group_label.pack(side=tk.LEFT, padx=2)
+
+        # Display task summary
+        overdue_tasks = [
+            task
+            for task in todays_tasks
+            if datetime.strptime(task.get("due_date", "9999-12-31"), "%Y-%m-%d").date()
+            < datetime.now().date()
+        ]
+        due_today = [
+            task
+            for task in todays_tasks
+            if datetime.strptime(task.get("due_date", "9999-12-31"), "%Y-%m-%d").date()
+            == datetime.now().date()
+        ]
+
+        summary_frame = tk.Frame(parent, bg=self.theme.bg_color)
+        summary_frame.pack(fill=tk.X, pady=5)
+
+        summary_text = f"Due today: {len(due_today)}"
+        if overdue_tasks:
+            summary_text += f" | Overdue: {len(overdue_tasks)}"
+
+        summary_label = tk.Label(
+            summary_frame,
+            text=summary_text,
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg="#F44336" if overdue_tasks else self.theme.text_color,
+        )
+        summary_label.pack(pady=5)
+
+    def toggle_habit_completion(self, habit_name):
+        """
+        Toggle a habit's completion status for today.
+
+        Args:
+            habit_name: Name of the habit to toggle
+        """
+        # Find the habit
+        habit = None
+        habit_list = None
+        habit_index = -1
+
+        # Get today's date
+        today = datetime.now().date().strftime("%Y-%m-%d")
+
+        # Check in daily habits
+        for i, h in enumerate(self.data.get("habits", {}).get("daily_habits", [])):
+            if h["name"] == habit_name:
+                habit = h
+                habit_list = "daily_habits"
+                habit_index = i
+                break
+
+        # If not found in daily habits, check custom habits
+        if habit is None:
+            for i, h in enumerate(self.data.get("habits", {}).get("custom_habits", [])):
+                if h["name"] == habit_name:
+                    habit = h
+                    habit_list = "custom_habits"
+                    habit_index = i
+                    break
+
+        if habit is None:
+            return
+
+        # Get completed dates list
+        completed_dates = habit.get("completed_dates", [])
+
+        # Toggle the date
+        if today in completed_dates:
+            # Remove date if already completed
+            completed_dates.remove(today)
+        else:
+            # Add date if not completed
+            completed_dates.append(today)
+
+        # Update the habit
+        self.data["habits"][habit_list][habit_index]["completed_dates"] = (
+            completed_dates
+        )
+
+        # Update the streak
+        self.habit_tracker.habit_tab.update_habit_streak(habit_list, habit_index)
+
+        # Save data
+        self.data_manager.save_data()
+
+        # Refresh the display
+        self.show_main_menu()

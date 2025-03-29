@@ -28,6 +28,210 @@ class RewardsModule:
         self.data = data_manager.data
         self.theme = theme
 
+    def create_rewards_tab(self, parent):
+        """
+        Create the rewards tab for the main notebook interface.
+
+        Args:
+            parent: Parent widget to place the rewards content
+        """
+        # Total points display
+        total_points = (
+            self.data["art"]["points"]
+            + self.data["korean"]["points"]
+            + self.data["french"]["points"]
+            + self.data["diss"]["points"]
+        )
+
+        points_frame = tk.Frame(parent, bg=self.theme.bg_color)
+        points_frame.pack(pady=10, fill=tk.X)
+
+        points_label = tk.Label(
+            points_frame,
+            text=f"Available Points: {total_points}",
+            font=self.theme.pixel_font,
+            bg=self.theme.bg_color,
+            fg="#E91E63",  # Pink color for rewards
+        )
+        points_label.pack(pady=10)
+
+        # Add claim reward button
+        if total_points >= 50:
+            claim_button = self.theme.create_pixel_button(
+                points_frame,
+                "Claim a Reward",
+                lambda: self.claim_reward(parent.winfo_toplevel()),
+                color="#E91E63",
+            )
+            claim_button.pack(pady=10)
+        else:
+            tk.Label(
+                points_frame,
+                text="Earn at least 50 points to claim rewards",
+                font=self.theme.small_font,
+                bg=self.theme.bg_color,
+                fg=self.theme.text_color,
+            ).pack(pady=10)
+
+        # Create notebook with tabs for rewards categories
+        reward_notebook = ttk.Notebook(parent)
+        reward_notebook.pack(expand=1, fill="both", padx=10, pady=10)
+
+        # Create tabs for different reward tiers
+        available_tab = tk.Frame(reward_notebook, bg=self.theme.bg_color)
+        manage_tab = tk.Frame(reward_notebook, bg=self.theme.bg_color)
+        history_tab = tk.Frame(reward_notebook, bg=self.theme.bg_color)
+
+        reward_notebook.add(available_tab, text="Available Rewards")
+        reward_notebook.add(manage_tab, text="Manage Rewards")
+        reward_notebook.add(history_tab, text="Reward History")
+
+        # Fill the available rewards tab
+        self.create_available_rewards_view(available_tab)
+
+        # Fill the manage rewards tab
+        self.create_manage_rewards_tab(manage_tab)
+
+        # Fill the history tab
+        self.create_reward_history_tab(history_tab)
+
+    def create_available_rewards_view(self, parent):
+        """
+        Create the available rewards view with categories.
+
+        Args:
+            parent: Parent widget for the rewards view
+        """
+        # Create scrollable frame
+        canvas = tk.Canvas(parent, bg=self.theme.bg_color, highlightthickness=0)
+        scrollbar = ttk.Scrollbar(parent, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg=self.theme.bg_color)
+
+        scrollable_frame.bind(
+            "<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side="left", fill="both", expand=True, padx=10, pady=10)
+        scrollbar.pack(side="right", fill="y")
+
+        # Small rewards (50 points)
+        small_frame = tk.LabelFrame(
+            scrollable_frame,
+            text="Small Rewards (50 points)",
+            font=self.theme.pixel_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+            padx=10,
+            pady=10,
+            relief=tk.RIDGE,
+            bd=3,
+        )
+        small_frame.pack(fill=tk.X, expand=True, pady=5, padx=10)
+
+        for i, reward in enumerate(self.data["rewards"]["small"]):
+            reward_frame = tk.Frame(small_frame, bg=self.theme.bg_color)
+            reward_frame.pack(anchor="w", pady=2)
+
+            # Create a pixel art bullet point
+            bullet = tk.Label(
+                reward_frame,
+                text="■",
+                font=self.theme.small_font,
+                bg=self.theme.bg_color,
+                fg=self.theme.primary_color,
+            )
+            bullet.pack(side=tk.LEFT, padx=5)
+
+            # Reward text
+            text = tk.Label(
+                reward_frame,
+                text=reward,
+                font=self.theme.small_font,
+                bg=self.theme.bg_color,
+                fg=self.theme.text_color,
+            )
+            text.pack(side=tk.LEFT)
+
+        # Medium rewards (200 points)
+        medium_frame = tk.LabelFrame(
+            scrollable_frame,
+            text="Medium Rewards (200 points)",
+            font=self.theme.pixel_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+            padx=10,
+            pady=10,
+            relief=tk.RIDGE,
+            bd=3,
+        )
+        medium_frame.pack(fill=tk.X, expand=True, pady=5, padx=10)
+
+        for i, reward in enumerate(self.data["rewards"]["medium"]):
+            reward_frame = tk.Frame(medium_frame, bg=self.theme.bg_color)
+            reward_frame.pack(anchor="w", pady=2)
+
+            # Create a pixel art bullet point
+            bullet = tk.Label(
+                reward_frame,
+                text="■",
+                font=self.theme.small_font,
+                bg=self.theme.bg_color,
+                fg=self.theme.secondary_color,
+            )
+            bullet.pack(side=tk.LEFT, padx=5)
+
+            # Reward text
+            text = tk.Label(
+                reward_frame,
+                text=reward,
+                font=self.theme.small_font,
+                bg=self.theme.bg_color,
+                fg=self.theme.text_color,
+            )
+            text.pack(side=tk.LEFT)
+
+        # Large rewards (500 points)
+        large_frame = tk.LabelFrame(
+            scrollable_frame,
+            text="Large Rewards (500 points)",
+            font=self.theme.pixel_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+            padx=10,
+            pady=10,
+            relief=tk.RIDGE,
+            bd=3,
+        )
+        large_frame.pack(fill=tk.X, expand=True, pady=5, padx=10)
+
+        for i, reward in enumerate(self.data["rewards"]["large"]):
+            reward_frame = tk.Frame(large_frame, bg=self.theme.bg_color)
+            reward_frame.pack(anchor="w", pady=2)
+
+            # Create a pixel art bullet point
+            bullet = tk.Label(
+                reward_frame,
+                text="■",
+                font=self.theme.small_font,
+                bg=self.theme.bg_color,
+                fg="#E91E63",  # Pink for large rewards
+            )
+            bullet.pack(side=tk.LEFT, padx=5)
+
+            # Reward text
+            text = tk.Label(
+                reward_frame,
+                text=reward,
+                font=self.theme.small_font,
+                bg=self.theme.bg_color,
+                fg=self.theme.text_color,
+            )
+            text.pack(side=tk.LEFT)
+
+    # Keep the original show_rewards method for backward compatibility
     def show_rewards(self):
         """Show rewards window with management options and pixel art styling."""
         rewards_window = tk.Toplevel(self.app.root)
@@ -68,6 +272,7 @@ class RewardsModule:
             self.data["art"]["points"]
             + self.data["korean"]["points"]
             + self.data["french"]["points"]
+            + self.data["diss"]["points"]
         )
         tk.Label(
             view_tab,
@@ -560,8 +765,8 @@ class RewardsModule:
             # Clear entry field
             entry_widget.delete(0, tk.END)
 
-            # Refresh the reward management tab
-            self.show_rewards()
+            # Refresh the rewards display
+            self.app.show_main_menu()
         else:
             messagebox.showinfo(
                 "Already Exists",
@@ -658,7 +863,7 @@ class RewardsModule:
             dialog.destroy()
 
             # Refresh the rewards display
-            self.show_rewards()
+            self.app.show_main_menu()
         else:
             # No changes made
             dialog.destroy()
@@ -685,7 +890,7 @@ class RewardsModule:
             )
 
             # Refresh the rewards display
-            self.show_rewards()
+            self.app.show_main_menu()
 
     def claim_reward(self, window):
         """
@@ -698,6 +903,7 @@ class RewardsModule:
             self.data["art"]["points"]
             + self.data["korean"]["points"]
             + self.data["french"]["points"]
+            + self.data["diss"]["points"]
         )
 
         # Determine available reward tiers
@@ -800,13 +1006,16 @@ class RewardsModule:
 
         # Distribute the cost proportionally across all three areas
         art_ratio = (
-            self.data["art"]["points"] / total_points if total_points > 0 else 0.33
+            self.data["art"]["points"] / total_points if total_points > 0 else 0.25
         )
         korean_ratio = (
-            self.data["korean"]["points"] / total_points if total_points > 0 else 0.33
+            self.data["korean"]["points"] / total_points if total_points > 0 else 0.25
         )
         french_ratio = (
-            self.data["french"]["points"] / total_points if total_points > 0 else 0.34
+            self.data["french"]["points"] / total_points if total_points > 0 else 0.25
+        )
+        diss_ratio = (
+            self.data["diss"]["points"] / total_points if total_points > 0 else 0.25
         )
 
         art_deduction = int(cost * art_ratio)
