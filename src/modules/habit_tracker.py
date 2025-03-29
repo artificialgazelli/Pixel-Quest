@@ -45,11 +45,18 @@ class HabitTracker:
         """
         if "habits" not in self.data:
             self.data["habits"] = {
+                "categories": [
+                    {"name": "Health", "color": "#4CAF50"},  # Green
+                    {"name": "Productivity", "color": "#2196F3"},  # Blue
+                    {"name": "Learning", "color": "#FF9800"},  # Orange
+                    {"name": "Personal", "color": "#E91E63"},  # Pink
+                ],
                 "daily_habits": [
                     {
                         "name": "Early wakeup",
                         "icon": "☀️",
                         "active": True,
+                        "category": "Productivity",  # Add category
                         "frequency": "daily",
                         "streak": 0,
                         "completed_dates": []
@@ -58,6 +65,7 @@ class HabitTracker:
                         "name": "Exercise",
                         "icon": "🏃",
                         "active": True,
+                        "category": "Health",  # Add category
                         "frequency": "daily",
                         "streak": 0,
                         "completed_dates": []
@@ -66,6 +74,7 @@ class HabitTracker:
                         "name": "Reading",
                         "icon": "📚",
                         "active": True,
+                        "category": "Learning",  # Add category
                         "frequency": "daily",
                         "streak": 0,
                         "completed_dates": []
@@ -74,6 +83,7 @@ class HabitTracker:
                         "name": "Meditation",
                         "icon": "🧘",
                         "active": True,
+                        "category": "Health",  # Add category
                         "frequency": "daily", 
                         "streak": 0,
                         "completed_dates": []
@@ -82,6 +92,7 @@ class HabitTracker:
                         "name": "Drink water",
                         "icon": "💧",
                         "active": True,
+                        "category": "Health",  # Add category
                         "frequency": "daily",
                         "streak": 0,
                         "completed_dates": []
@@ -92,12 +103,14 @@ class HabitTracker:
                     {
                         "name": "Doctor Appointments",
                         "icon": "🩺",
+                        "category": "Health",  # Add category
                         "dates": [],
                         "notes": {}
                     },
                     {
                         "name": "Dentist",
                         "icon": "🦷",
+                        "category": "Health",  # Add category
                         "dates": [],
                         "notes": {}
                     }
@@ -105,6 +118,29 @@ class HabitTracker:
             }
             # Save the initialized data
             self.data_manager.save_data()
+        else:
+            # If the data exists but categories are missing, add them
+            if "categories" not in self.data["habits"]:
+                self.data["habits"]["categories"] = [
+                    {"name": "Health", "color": "#4CAF50"},  # Green
+                    {"name": "Productivity", "color": "#2196F3"},  # Blue
+                    {"name": "Learning", "color": "#FF9800"},  # Orange
+                    {"name": "Personal", "color": "#E91E63"},  # Pink
+                ]
+                
+                # Ensure all habits have a category
+                for habit_type in ["daily_habits", "custom_habits"]:
+                    for habit in self.data["habits"].get(habit_type, []):
+                        if "category" not in habit:
+                            habit["category"] = "Personal"
+                
+                # Ensure all check-ins have a category
+                for check_in in self.data["habits"].get("check_ins", []):
+                    if "category" not in check_in:
+                        check_in["category"] = "Health"
+                        
+                # Save the updated data
+                self.data_manager.save_data()
         
     def show_module(self, parent_frame):
         """
@@ -131,15 +167,18 @@ class HabitTracker:
         habits_tab = tk.Frame(tab_control, bg=self.theme.bg_color)
         check_ins_tab = tk.Frame(tab_control, bg=self.theme.bg_color)
         stats_tab = tk.Frame(tab_control, bg=self.theme.bg_color)
+        categories_tab = tk.Frame(tab_control, bg=self.theme.bg_color)  # New categories tab
         
         tab_control.add(habits_tab, text="Daily Habits")
         tab_control.add(check_ins_tab, text="Check-ins")
         tab_control.add(stats_tab, text="Statistics")
+        tab_control.add(categories_tab, text="Categories")  # Add categories tab
         
         # Fill the tabs with content
         self.create_habits_view(habits_tab)
         self.create_check_ins_view(check_ins_tab)
         self.create_stats_view(stats_tab)
+        self.create_categories_view(categories_tab)  # Create categories view
         
         # Back button
         back_button = self.theme.create_pixel_button(
@@ -149,6 +188,559 @@ class HabitTracker:
             color="#9E9E9E",
         )
         back_button.pack(pady=20)
+    
+    def create_categories_view(self, parent):
+        """
+        Create the categories tab view for managing habit categories.
+        
+        Args:
+            parent: Parent frame to place the categories view
+        """
+        # Top control panel
+        control_frame = tk.Frame(parent, bg=self.theme.bg_color)
+        control_frame.pack(pady=10, fill=tk.X)
+        
+        # Add category button
+        add_category_button = self.theme.create_pixel_button(
+            control_frame,
+            "Add New Category",
+            self.add_new_category,
+            color=self.theme.habit_color,
+        )
+        add_category_button.pack(side=tk.LEFT, padx=10)
+        
+        # Create a frame for displaying categories
+        categories_frame = tk.Frame(parent, bg=self.theme.bg_color)
+        categories_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # If no categories exist yet, show a message
+        if not self.data["habits"].get("categories", []):
+            tk.Label(
+                categories_frame,
+                text="No categories defined yet. Click 'Add New Category' to get started!",
+                font=self.theme.pixel_font,
+                bg=self.theme.bg_color,
+                fg=self.theme.text_color,
+                pady=20,
+            ).pack()
+            return
+        
+        # Get all categories
+        categories = self.data["habits"].get("categories", [])
+        
+        # Create a table header
+        header_frame = tk.Frame(categories_frame, bg=self.theme.bg_color)
+        header_frame.pack(fill=tk.X, pady=5)
+        
+        tk.Label(
+            header_frame,
+            text="Category Name",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+            width=20,
+            anchor="w",
+        ).grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        
+        tk.Label(
+            header_frame,
+            text="Color",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+            width=10,
+            anchor="w",
+        ).grid(row=0, column=1, padx=5, pady=5, sticky="w")
+        
+        tk.Label(
+            header_frame,
+            text="Habits Count",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+            width=15,
+            anchor="w",
+        ).grid(row=0, column=2, padx=5, pady=5, sticky="w")
+        
+        tk.Label(
+            header_frame,
+            text="Actions",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+            width=15,
+            anchor="w",
+        ).grid(row=0, column=3, padx=5, pady=5, sticky="w")
+        
+        # Create scrollable frame for categories
+        canvas = tk.Canvas(categories_frame, bg=self.theme.bg_color, highlightthickness=0)
+        scrollbar = ttk.Scrollbar(categories_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg=self.theme.bg_color)
+        
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        canvas.pack(side="left", fill="both", expand=True, padx=5, pady=5)
+        scrollbar.pack(side="right", fill="y")
+        
+        # Display each category
+        for i, category in enumerate(categories):
+            # Row background alternates for better readability
+            row_bg = self.theme.bg_color if i % 2 == 0 else self.theme.darken_color(self.theme.bg_color)
+            
+            # Count habits in this category
+            habits_count = 0
+            for habit_type in ["daily_habits", "custom_habits"]:
+                for habit in self.data["habits"].get(habit_type, []):
+                    if habit.get("category") == category["name"]:
+                        habits_count += 1
+            
+            # Category row
+            row_frame = tk.Frame(scrollable_frame, bg=row_bg)
+            row_frame.pack(fill=tk.X)
+            
+            # Category name
+            tk.Label(
+                row_frame,
+                text=category["name"],
+                font=self.theme.small_font,
+                bg=row_bg,
+                fg=self.theme.text_color,
+                width=20,
+                anchor="w",
+            ).grid(row=0, column=0, padx=5, pady=5, sticky="w")
+            
+            # Color indicator
+            color_frame = tk.Frame(row_frame, bg=row_bg)
+            color_frame.grid(row=0, column=1, padx=5, pady=5)
+            
+            color_sample = tk.Frame(
+                color_frame,
+                bg=category["color"],
+                width=20,
+                height=20,
+            )
+            color_sample.pack(side=tk.LEFT, padx=5)
+            
+            color_label = tk.Label(
+                color_frame,
+                text=category["color"],
+                font=self.theme.small_font,
+                bg=row_bg,
+                fg=self.theme.text_color,
+            )
+            color_label.pack(side=tk.LEFT, padx=5)
+            
+            # Habits count
+            tk.Label(
+                row_frame,
+                text=str(habits_count),
+                font=self.theme.small_font,
+                bg=row_bg,
+                fg=self.theme.text_color,
+                width=15,
+                anchor="w",
+            ).grid(row=0, column=2, padx=5, pady=5, sticky="w")
+            
+            # Action buttons
+            actions_frame = tk.Frame(row_frame, bg=row_bg)
+            actions_frame.grid(row=0, column=3, padx=5, pady=5)
+            
+            # Edit button
+            edit_button = tk.Button(
+                actions_frame,
+                text="✏️",
+                font=self.theme.small_font,
+                bg=self.theme.primary_color,
+                fg=self.theme.text_color,
+                command=lambda c=category: self.edit_category(c),
+                relief=tk.FLAT,
+            )
+            edit_button.pack(side=tk.LEFT, padx=5)
+            
+            # Delete button (disabled if category has habits)
+            delete_button = tk.Button(
+                actions_frame,
+                text="🗑️",
+                font=self.theme.small_font,
+                bg="#F44336" if habits_count == 0 else self.theme.darken_color(self.theme.bg_color),
+                fg="white" if habits_count == 0 else self.theme.text_color,
+                command=lambda c=category: self.delete_category(c) if habits_count == 0 else messagebox.showinfo("Cannot Delete", f"Can't delete category with {habits_count} habits assigned to it."),
+                relief=tk.FLAT,
+                state=tk.NORMAL if habits_count == 0 else tk.DISABLED,
+            )
+            delete_button.pack(side=tk.LEFT, padx=5)
+    
+    def add_new_category(self):
+        """Open a dialog to add a new category."""
+        # Create a dialog window
+        dialog = tk.Toplevel()
+        dialog.title("Add New Category")
+        dialog.geometry("400x200")
+        dialog.configure(bg=self.theme.bg_color)
+        dialog.transient(self.app.root)
+        dialog.grab_set()
+        
+        # Name input
+        name_frame = tk.Frame(dialog, bg=self.theme.bg_color)
+        name_frame.pack(fill=tk.X, padx=20, pady=10)
+        
+        tk.Label(
+            name_frame,
+            text="Category Name:",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+        ).pack(side=tk.LEFT)
+        
+        name_var = tk.StringVar()
+        name_entry = tk.Entry(
+            name_frame,
+            textvariable=name_var,
+            font=self.theme.small_font,
+            bg=self.theme.primary_color,
+            fg=self.theme.text_color,
+            width=30,
+        )
+        name_entry.pack(side=tk.LEFT, padx=10)
+        
+        # Color input
+        color_frame = tk.Frame(dialog, bg=self.theme.bg_color)
+        color_frame.pack(fill=tk.X, padx=20, pady=10)
+        
+        tk.Label(
+            color_frame,
+            text="Color (Hex):",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+        ).pack(side=tk.LEFT)
+        
+        color_var = tk.StringVar(value="#4CAF50")
+        color_entry = tk.Entry(
+            color_frame,
+            textvariable=color_var,
+            font=self.theme.small_font,
+            bg=self.theme.primary_color,
+            fg=self.theme.text_color,
+            width=10,
+        )
+        color_entry.pack(side=tk.LEFT, padx=10)
+        
+        # Color preview
+        color_preview = tk.Frame(
+            color_frame,
+            bg="#4CAF50",
+            width=20,
+            height=20,
+        )
+        color_preview.pack(side=tk.LEFT, padx=10)
+        
+        # Update color preview when color changes
+        def update_preview(*args):
+            try:
+                color = color_var.get()
+                color_preview.config(bg=color)
+            except:
+                pass
+        
+        color_var.trace_add("write", update_preview)
+        
+        # Button frame
+        button_frame = tk.Frame(dialog, bg=self.theme.bg_color)
+        button_frame.pack(pady=20)
+        
+        # Cancel button
+        cancel_button = self.theme.create_pixel_button(
+            button_frame,
+            "Cancel",
+            dialog.destroy,
+            color="#F44336",
+        )
+        cancel_button.pack(side=tk.LEFT, padx=10)
+        
+        # Add button
+        add_button = self.theme.create_pixel_button(
+            button_frame,
+            "Add Category",
+            lambda: self.save_new_category(
+                name_var.get(),
+                color_var.get(),
+                dialog,
+            ),
+            color=self.theme.habit_color,  # Use theme's habit color
+        )
+        add_button.pack(side=tk.LEFT, padx=10)
+        
+        # Focus the name entry
+        name_entry.focus_set()
+    
+    def save_new_category(self, name, color, dialog):
+        """
+        Save a new category to the data.
+        
+        Args:
+            name: Category name
+            color: Category color
+            dialog: Dialog window to close after saving
+        """
+        # Validate input
+        if not name:
+            messagebox.showerror("Error", "Please enter a category name.")
+            return
+        
+        # Validate color
+        try:
+            self.root.winfo_rgb(color)
+        except:
+            messagebox.showerror("Error", "Invalid color format. Please use a valid hex code (#RRGGBB).")
+            return
+        
+        # Check if category name already exists
+        for category in self.data["habits"].get("categories", []):
+            if category["name"] == name:
+                messagebox.showerror("Error", f"A category named '{name}' already exists.")
+                return
+        
+        # Create new category
+        new_category = {
+            "name": name,
+            "color": color
+        }
+        
+        # Initialize categories if not exist
+        if "categories" not in self.data["habits"]:
+            self.data["habits"]["categories"] = []
+        
+        # Add to categories
+        self.data["habits"]["categories"].append(new_category)
+        
+        # Save data
+        self.data_manager.save_data()
+        
+        # Close dialog
+        dialog.destroy()
+        
+        # Refresh display
+        self.refresh_display()
+        
+        # Show confirmation
+        messagebox.showinfo("Success", f"Category '{name}' has been added!")
+    
+    def edit_category(self, category):
+        """
+        Open a dialog to edit an existing category.
+        
+        Args:
+            category: Category to edit
+        """
+        # Create a dialog window
+        dialog = tk.Toplevel()
+        dialog.title(f"Edit Category: {category['name']}")
+        dialog.geometry("400x200")
+        dialog.configure(bg=self.theme.bg_color)
+        dialog.transient(self.app.root)
+        dialog.grab_set()
+        
+        # Name input
+        name_frame = tk.Frame(dialog, bg=self.theme.bg_color)
+        name_frame.pack(fill=tk.X, padx=20, pady=10)
+        
+        tk.Label(
+            name_frame,
+            text="Category Name:",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+        ).pack(side=tk.LEFT)
+        
+        name_var = tk.StringVar(value=category["name"])
+        name_entry = tk.Entry(
+            name_frame,
+            textvariable=name_var,
+            font=self.theme.small_font,
+            bg=self.theme.primary_color,
+            fg=self.theme.text_color,
+            width=30,
+        )
+        name_entry.pack(side=tk.LEFT, padx=10)
+        
+        # Color input
+        color_frame = tk.Frame(dialog, bg=self.theme.bg_color)
+        color_frame.pack(fill=tk.X, padx=20, pady=10)
+        
+        tk.Label(
+            color_frame,
+            text="Color (Hex):",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+        ).pack(side=tk.LEFT)
+        
+        color_var = tk.StringVar(value=category["color"])
+        color_entry = tk.Entry(
+            color_frame,
+            textvariable=color_var,
+            font=self.theme.small_font,
+            bg=self.theme.primary_color,
+            fg=self.theme.text_color,
+            width=10,
+        )
+        color_entry.pack(side=tk.LEFT, padx=10)
+        
+        # Color preview
+        color_preview = tk.Frame(
+            color_frame,
+            bg=category["color"],
+            width=20,
+            height=20,
+        )
+        color_preview.pack(side=tk.LEFT, padx=10)
+        
+        # Update color preview when color changes
+        def update_preview(*args):
+            try:
+                color = color_var.get()
+                color_preview.config(bg=color)
+            except:
+                pass
+        
+        color_var.trace_add("write", update_preview)
+        
+        # Button frame
+        button_frame = tk.Frame(dialog, bg=self.theme.bg_color)
+        button_frame.pack(pady=20)
+        
+        # Cancel button
+        cancel_button = self.theme.create_pixel_button(
+            button_frame,
+            "Cancel",
+            dialog.destroy,
+            color="#F44336",
+        )
+        cancel_button.pack(side=tk.LEFT, padx=10)
+        
+        # Update button
+        update_button = self.theme.create_pixel_button(
+            button_frame,
+            "Update Category",
+            lambda: self.update_category(
+                category,
+                name_var.get(),
+                color_var.get(),
+                dialog,
+            ),
+            color=self.theme.habit_color,  # Use theme's habit color
+        )
+        update_button.pack(side=tk.LEFT, padx=10)
+        
+        # Focus the name entry
+        name_entry.focus_set()
+    
+    def update_category(self, category, new_name, new_color, dialog):
+        """
+        Update an existing category.
+        
+        Args:
+            category: Existing category to update
+            new_name: New category name
+            new_color: New category color
+            dialog: Dialog window to close after saving
+        """
+        # Validate input
+        if not new_name:
+            messagebox.showerror("Error", "Please enter a category name.")
+            return
+        
+        # Validate color
+        try:
+            self.root.winfo_rgb(new_color)
+        except:
+            messagebox.showerror("Error", "Invalid color format. Please use a valid hex code (#RRGGBB).")
+            return
+        
+        # Check if category name already exists (unless it's the same name)
+        if new_name != category["name"]:
+            for cat in self.data["habits"].get("categories", []):
+                if cat["name"] == new_name:
+                    messagebox.showerror("Error", f"A category named '{new_name}' already exists.")
+                    return
+        
+        # Find the category and update it
+        for i, cat in enumerate(self.data["habits"].get("categories", [])):
+            if cat["name"] == category["name"]:
+                # Update category
+                self.data["habits"]["categories"][i]["name"] = new_name
+                self.data["habits"]["categories"][i]["color"] = new_color
+                
+                # Update habits that use this category
+                old_name = category["name"]
+                for habit_type in ["daily_habits", "custom_habits"]:
+                    for habit in self.data["habits"].get(habit_type, []):
+                        if habit.get("category") == old_name:
+                            habit["category"] = new_name
+                
+                # Update check-ins that use this category
+                for check_in in self.data["habits"].get("check_ins", []):
+                    if check_in.get("category") == old_name:
+                        check_in["category"] = new_name
+                
+                break
+        
+        # Save data
+        self.data_manager.save_data()
+        
+        # Close dialog
+        dialog.destroy()
+        
+        # Refresh display
+        self.refresh_display()
+        
+        # Show confirmation
+        messagebox.showinfo("Success", f"Category '{new_name}' has been updated!")
+    
+    def delete_category(self, category):
+        """
+        Delete a category.
+        
+        Args:
+            category: Category to delete
+        """
+        # Confirm deletion
+        if not messagebox.askyesno("Confirm Deletion", f"Are you sure you want to delete the category '{category['name']}'?"):
+            return
+        
+        # Count habits in this category
+        habits_count = 0
+        for habit_type in ["daily_habits", "custom_habits"]:
+            for habit in self.data["habits"].get(habit_type, []):
+                if habit.get("category") == category["name"]:
+                    habits_count += 1
+        
+        # Don't delete if habits are assigned
+        if habits_count > 0:
+            messagebox.showinfo("Cannot Delete", f"Cannot delete category with {habits_count} habits assigned to it.")
+            return
+        
+        # Find the category and delete it
+        for i, cat in enumerate(self.data["habits"].get("categories", [])):
+            if cat["name"] == category["name"]:
+                del self.data["habits"]["categories"][i]
+                break
+        
+        # Save data
+        self.data_manager.save_data()
+        
+        # Refresh display
+        self.refresh_display()
+        
+        # Show confirmation
+        messagebox.showinfo("Success", f"Category '{category['name']}' has been deleted!")
         
     def create_habits_view(self, parent):
         """
@@ -169,6 +761,34 @@ class HabitTracker:
             color="#4CAF50",
         )
         add_habit_button.pack(side=tk.LEFT, padx=10)
+        
+        # Filter by category dropdown
+        filter_frame = tk.Frame(control_frame, bg=self.theme.bg_color)
+        filter_frame.pack(side=tk.LEFT, padx=20)
+        
+        tk.Label(
+            filter_frame,
+            text="Filter by Category:",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+        ).pack(side=tk.LEFT, padx=5)
+        
+        # Get categories for dropdown
+        categories = ["All"] + [c["name"] for c in self.data["habits"].get("categories", [])]
+        
+        self.category_filter_var = tk.StringVar(value="All")
+        category_dropdown = ttk.Combobox(
+            filter_frame,
+            textvariable=self.category_filter_var,
+            values=categories,
+            font=self.theme.small_font,
+            width=15,
+        )
+        category_dropdown.pack(side=tk.LEFT, padx=5)
+        
+        # Add binding to refresh when filter changes
+        category_dropdown.bind("<<ComboboxSelected>>", lambda e: self.refresh_display())
         
         # Current week display
         today = datetime.now().date()
@@ -265,17 +885,31 @@ class HabitTracker:
             self.data.get("habits", {}).get("custom_habits", [])
         )
         
+        # Filter by category if needed
+        selected_category = self.category_filter_var.get()
+        if selected_category != "All":
+            all_habits = [h for h in all_habits if h.get("category") == selected_category]
+        
         # If no habits exist yet, show a message
         if not all_habits:
+            message = "No habits added yet. Click 'Add New Habit' to get started!"
+            if selected_category != "All":
+                message = f"No habits in the '{selected_category}' category. Try a different filter or add new habits."
+                
             tk.Label(
                 parent,
-                text="No habits added yet. Click 'Add New Habit' to get started!",
+                text=message,
                 font=self.theme.pixel_font,
                 bg=self.theme.bg_color,
                 fg=self.theme.text_color,
                 pady=20,
             ).grid(row=0, column=0, columnspan=8)
             return
+        
+        # Get category colors
+        category_colors = {}
+        for category in self.data["habits"].get("categories", []):
+            category_colors[category["name"]] = category["color"]
         
         # Create a row for each habit
         for i, habit in enumerate(all_habits):
@@ -286,9 +920,22 @@ class HabitTracker:
             # Row background alternates for better readability
             row_bg = self.theme.bg_color if i % 2 == 0 else self.theme.darken_color(self.theme.bg_color)
             
+            # Get category color
+            category = habit.get("category", "Personal")
+            category_color = category_colors.get(category, self.theme.habit_color)
+            
             # Habit info frame (first column)
             habit_frame = tk.Frame(parent, bg=row_bg, padx=5, pady=5)
             habit_frame.grid(row=i, column=0, sticky="ew")
+            
+            # Category color indicator
+            category_indicator = tk.Frame(
+                habit_frame,
+                bg=category_color,
+                width=5,
+                height=20
+            )
+            category_indicator.pack(side=tk.LEFT, padx=2)
             
             # Habit icon and name
             icon_label = tk.Label(
@@ -597,6 +1244,128 @@ class HabitTracker:
             fg="#FF5722",  # Orange
         ).pack()
         
+        # Category breakdown
+        category_frame = tk.LabelFrame(
+            parent,
+            text="Habits by Category",
+            font=self.theme.pixel_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.habit_color,  # Use the theme's habit color
+        )
+        category_frame.pack(fill=tk.X, padx=10, pady=10)
+        
+        # Get categories and counts
+        categories = self.data["habits"].get("categories", [])
+        category_counts = {}
+        category_completion = {}
+        
+        for habit in habits:
+            if not habit.get("active", True):
+                continue
+                
+            category = habit.get("category", "Personal")
+            
+            # Initialize counter if needed
+            if category not in category_counts:
+                category_counts[category] = 0
+                category_completion[category] = 0
+                
+            # Increment count
+            category_counts[category] += 1
+            
+            # Check if completed today
+            if today in habit.get("completed_dates", []):
+                category_completion[category] += 1
+        
+        # Display categories
+        category_grid = tk.Frame(category_frame, bg=self.theme.bg_color)
+        category_grid.pack(fill=tk.X, padx=10, pady=10)
+        
+        # If no categories, show message
+        if not categories:
+            tk.Label(
+                category_grid,
+                text="No categories defined yet. Go to the Categories tab to add some!",
+                font=self.theme.small_font,
+                bg=self.theme.bg_color,
+                fg=self.theme.text_color,
+            ).pack(pady=10)
+        else:
+            # Get category colors
+            category_colors = {}
+            for category in categories:
+                category_colors[category["name"]] = category["color"]
+            
+            # Show categories in a grid
+            for i, category in enumerate(categories):
+                name = category["name"]
+                count = category_counts.get(name, 0)
+                
+                if count == 0:
+                    continue  # Skip categories with no active habits
+                    
+                # Calculate completion rate
+                completed = category_completion.get(name, 0)
+                completion_rate = int((completed / count) * 100) if count > 0 else 0
+                
+                # Category card
+                card_frame = tk.Frame(
+                    category_grid,
+                    bg=self.theme.bg_color,
+                    relief=tk.RIDGE,
+                    bd=1,
+                    padx=10,
+                    pady=10,
+                )
+                card_frame.grid(
+                    row=i//2,
+                    column=i%2,
+                    padx=10,
+                    pady=10,
+                    sticky="news",
+                )
+                
+                # Color indicator and name
+                header_frame = tk.Frame(card_frame, bg=self.theme.bg_color)
+                header_frame.pack(fill=tk.X)
+                
+                color_indicator = tk.Frame(
+                    header_frame,
+                    bg=category_colors.get(name, self.theme.habit_color),
+                    width=15,
+                    height=15,
+                )
+                color_indicator.pack(side=tk.LEFT, padx=5)
+                
+                name_label = tk.Label(
+                    header_frame,
+                    text=name,
+                    font=self.theme.small_font,
+                    bg=self.theme.bg_color,
+                    fg=self.theme.text_color,
+                )
+                name_label.pack(side=tk.LEFT, padx=5)
+                
+                # Count
+                tk.Label(
+                    card_frame,
+                    text=f"Habits: {count}",
+                    font=self.theme.small_font,
+                    bg=self.theme.bg_color,
+                    fg=self.theme.text_color,
+                ).pack(anchor="w")
+                
+                # Completion
+                completion_color = "#4CAF50" if completion_rate >= 80 else "#FFC107" if completion_rate >= 50 else "#F44336"
+                
+                tk.Label(
+                    card_frame,
+                    text=f"Today: {completed}/{count} ({completion_rate}%)",
+                    font=self.theme.small_font,
+                    bg=self.theme.bg_color,
+                    fg=completion_color,
+                ).pack(anchor="w")
+        
         # Habit performance chart
         performance_frame = tk.LabelFrame(
             parent,
@@ -643,6 +1412,11 @@ class HabitTracker:
         performance_canvas.pack(side="left", fill="both", expand=True, padx=5, pady=5)
         scrollbar.pack(side="right", fill="y")
         
+        # Get category colors
+        category_colors = {}
+        for category in self.data["habits"].get("categories", []):
+            category_colors[category["name"]] = category["color"]
+        
         # Display habit performance bars
         for i, habit in enumerate(habits):
             if not habit.get("active", True):
@@ -659,6 +1433,10 @@ class HabitTracker:
             recent_completed = [d for d in dates_to_check if d in completed_dates]
             completion_rate = (len(recent_completed) / len(dates_to_check)) * 100
             
+            # Get category and color
+            category = habit.get("category", "Personal")
+            category_color = category_colors.get(category, self.theme.habit_color)
+            
             # Create a row for this habit
             row_bg = self.theme.bg_color if i % 2 == 0 else self.theme.darken_color(self.theme.bg_color)
             row_frame = tk.Frame(scrollable_frame, bg=row_bg, padx=5, pady=8)
@@ -667,6 +1445,15 @@ class HabitTracker:
             # Habit name and icon
             name_frame = tk.Frame(row_frame, bg=row_bg, width=150)
             name_frame.pack(side=tk.LEFT, padx=5)
+            
+            # Category color indicator
+            category_indicator = tk.Frame(
+                name_frame,
+                bg=category_color,
+                width=5,
+                height=20
+            )
+            category_indicator.pack(side=tk.LEFT, padx=2)
             
             tk.Label(
                 name_frame,
@@ -839,7 +1626,7 @@ class HabitTracker:
         # Create a dialog window
         dialog = tk.Toplevel()
         dialog.title("Add New Habit")
-        dialog.geometry("400x300")
+        dialog.geometry("400x350")  # Increased height for category dropdown
         dialog.configure(bg=self.theme.bg_color)
         dialog.transient(self.app.root)
         dialog.grab_set()
@@ -891,6 +1678,34 @@ class HabitTracker:
         )
         icon_dropdown.pack(side=tk.LEFT, padx=10)
         
+        # Category selection
+        category_frame = tk.Frame(dialog, bg=self.theme.bg_color)
+        category_frame.pack(fill=tk.X, padx=20, pady=10)
+        
+        tk.Label(
+            category_frame,
+            text="Category:",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+        ).pack(side=tk.LEFT)
+        
+        # Get categories
+        categories = [c["name"] for c in self.data["habits"].get("categories", [])]
+        if not categories:
+            categories = ["Personal"]  # Default if no categories
+            
+        category_var = tk.StringVar(value=categories[0] if categories else "Personal")
+        
+        category_dropdown = ttk.Combobox(
+            category_frame,
+            textvariable=category_var,
+            values=categories,
+            font=self.theme.small_font,
+            width=15,
+        )
+        category_dropdown.pack(side=tk.LEFT, padx=10)
+        
         # Frequency selection (for future use)
         freq_frame = tk.Frame(dialog, bg=self.theme.bg_color)
         freq_frame.pack(fill=tk.X, padx=20, pady=10)
@@ -935,6 +1750,7 @@ class HabitTracker:
             lambda: self.save_new_habit(
                 name_var.get(),
                 icon_var.get(),
+                category_var.get(),
                 freq_var.get(),
                 dialog,
             ),
@@ -945,13 +1761,14 @@ class HabitTracker:
         # Focus the name entry
         name_entry.focus_set()
     
-    def save_new_habit(self, name, icon, frequency, dialog):
+    def save_new_habit(self, name, icon, category, frequency, dialog):
         """
         Save a new custom habit to the data.
         
         Args:
             name: Habit name
             icon: Habit icon
+            category: Habit category
             frequency: Habit frequency
             dialog: Dialog window to close after saving
         """
@@ -983,6 +1800,7 @@ class HabitTracker:
         new_habit = {
             "name": name,
             "icon": icon,
+            "category": category,  # Add category
             "frequency": frequency,
             "active": True,
             "streak": 0,
@@ -1200,6 +2018,7 @@ class HabitTracker:
             if date_str in check_in.get("dates", []):
                 day_check_ins.append({
                     "name": check_in["name"],
+                    "category": check_in.get("category", "Health"),  # Get category
                     "icon": check_in.get("icon", "🩺"),
                     "notes": check_in.get("notes", {}).get(date_str, "")
                 })
@@ -1216,6 +2035,11 @@ class HabitTracker:
             ).pack()
             return
         
+        # Get category colors
+        category_colors = {}
+        for category in self.data["habits"].get("categories", []):
+            category_colors[category["name"]] = category["color"]
+        
         # Display check-ins
         for check_in in day_check_ins:
             check_in_frame = tk.Frame(
@@ -1231,6 +2055,18 @@ class HabitTracker:
             # Header with icon and name
             header_frame = tk.Frame(check_in_frame, bg=self.theme.bg_color)
             header_frame.pack(fill=tk.X)
+            
+            # Category color indicator
+            category = check_in.get("category", "Health")
+            category_color = category_colors.get(category, self.theme.habit_color)
+            
+            color_indicator = tk.Frame(
+                header_frame,
+                bg=category_color,
+                width=5,
+                height=20
+            )
+            color_indicator.pack(side=tk.LEFT, padx=2)
             
             icon_label = tk.Label(
                 header_frame,
@@ -1249,6 +2085,16 @@ class HabitTracker:
                 fg=self.theme.text_color,
             )
             name_label.pack(side=tk.LEFT, padx=5)
+            
+            # Category label on the right
+            category_label = tk.Label(
+                header_frame,
+                text=category,
+                font=self.theme.small_font,
+                bg=self.theme.bg_color,
+                fg=category_color,
+            )
+            category_label.pack(side=tk.RIGHT, padx=5)
             
             # Notes if any
             if check_in["notes"]:
@@ -1285,7 +2131,7 @@ class HabitTracker:
         # Create a dialog window
         dialog = tk.Toplevel()
         dialog.title(f"Add Check-in for {formatted_date}")
-        dialog.geometry("400x350")
+        dialog.geometry("400x400")  # Increased height for category dropdown
         dialog.configure(bg=self.theme.bg_color)
         dialog.transient(self.app.root)
         dialog.grab_set()
@@ -1348,6 +2194,34 @@ class HabitTracker:
             width=20,
         )
         new_type_entry.pack(side=tk.LEFT, padx=10)
+        
+        # Category selection
+        category_frame = tk.Frame(dialog, bg=self.theme.bg_color)
+        category_frame.pack(fill=tk.X, padx=20, pady=10)
+        
+        tk.Label(
+            category_frame,
+            text="Category:",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+        ).pack(side=tk.LEFT)
+        
+        # Get categories
+        categories = [c["name"] for c in self.data["habits"].get("categories", [])]
+        if not categories:
+            categories = ["Health"]  # Default if no categories
+            
+        category_var = tk.StringVar(value=categories[0] if categories else "Health")
+        
+        category_dropdown = ttk.Combobox(
+            category_frame,
+            textvariable=category_var,
+            values=categories,
+            font=self.theme.small_font,
+            width=15,
+        )
+        category_dropdown.pack(side=tk.LEFT, padx=10)
         
         # Icon selection
         icon_frame = tk.Frame(dialog, bg=self.theme.bg_color)
@@ -1413,6 +2287,7 @@ class HabitTracker:
             "Save Check-in",
             lambda: self.save_check_in(
                 type_var.get() if type_var.get() != "New check-in..." else new_type_var.get(),
+                category_var.get(),
                 icon_var.get(),
                 date_str,
                 notes_text.get("1.0", tk.END).strip(),
@@ -1433,12 +2308,13 @@ class HabitTracker:
         # Bind dropdown change
         type_var.trace_add("write", on_type_change)
     
-    def save_check_in(self, check_in_type, icon, date_str, notes, dialog):
+    def save_check_in(self, check_in_type, category, icon, date_str, notes, dialog):
         """
         Save a check-in to the data.
         
         Args:
             check_in_type: Type of check-in
+            category: Category of check-in
             icon: Icon for the check-in
             date_str: Date string in YYYY-MM-DD format
             notes: Notes for the check-in
@@ -1468,11 +2344,16 @@ class HabitTracker:
             # Create new check-in type
             check_in = {
                 "name": check_in_type,
+                "category": category,  # Add category
                 "icon": icon,
                 "dates": [],
                 "notes": {}
             }
             self.data["habits"]["check_ins"].append(check_in)
+        else:
+            # Update category and icon if it already exists
+            check_in["category"] = category
+            check_in["icon"] = icon
         
         # Add date if not already there
         if date_str not in check_in["dates"]:
