@@ -8,15 +8,16 @@ from tkinter import ttk, messagebox
 from datetime import datetime
 from src.utils import update_streak, check_level_up, create_pixel_progress_bar
 
+
 class KoreanModule:
     """
     Manages the Korean module functionality.
     """
-    
+
     def __init__(self, app, data_manager, theme):
         """
         Initialize the Korean module.
-        
+
         Args:
             app: Main application instance
             data_manager: Data manager instance
@@ -26,11 +27,11 @@ class KoreanModule:
         self.data_manager = data_manager
         self.data = data_manager.data
         self.theme = theme
-        
+
     def show_module(self, parent_frame):
         """
         Show the Korean module interface.
-        
+
         Args:
             parent_frame: Parent frame to place module content
         """
@@ -45,7 +46,9 @@ class KoreanModule:
         title_label.pack(pady=20)
 
         # Stats frame
-        stats_frame = tk.Frame(parent_frame, bg=self.theme.bg_color, relief=tk.RIDGE, bd=3)
+        stats_frame = tk.Frame(
+            parent_frame, bg=self.theme.bg_color, relief=tk.RIDGE, bd=3
+        )
         stats_frame.pack(pady=10, fill=tk.X, padx=20)
 
         level_label = tk.Label(
@@ -90,11 +93,11 @@ class KoreanModule:
             color="#9E9E9E",
         )
         back_button.pack(pady=20)
-        
+
     def show_korean_projects(self, parent_frame):
         """
         Show Korean module projects with pixel art styling.
-        
+
         Args:
             parent_frame: Parent frame to place the projects
         """
@@ -133,11 +136,11 @@ class KoreanModule:
 
         # Show the first project by default
         self.show_korean_fundamentals(self.korean_project_container)
-        
+
     def update_korean_project_view(self, parent_frame):
         """
         Update the displayed project based on dropdown selection.
-        
+
         Args:
             parent_frame: Parent frame containing the projects
         """
@@ -153,11 +156,11 @@ class KoreanModule:
             self.show_korean_immersion(self.korean_project_container)
         elif project == "Korean Application":
             self.show_korean_application(self.korean_project_container)
-            
+
     def show_korean_fundamentals(self, parent_frame):
         """
         Show Korean fundamentals project details with pixel art styling.
-        
+
         Args:
             parent_frame: Parent frame to place the fundamentals content
         """
@@ -173,9 +176,10 @@ class KoreanModule:
         )
         project_frame.pack(pady=10, fill=tk.BOTH, expand=True, padx=10)
 
-        description = """Complete structured Korean lessons (Hangul, vocabulary, grammar)
-    Each completed lesson earns 2 points
-    Practice 3-4 days per week for 20-30 minutes"""
+        description = """
+Complete structured Korean lessons (Hangul, vocabulary, grammar)
+Each completed lesson earns 2 points
+Practice 3-4 days per week for 20-30 minutes"""
 
         tk.Label(
             project_frame,
@@ -207,12 +211,12 @@ class KoreanModule:
 
         # Create pixel art progress bar
         create_pixel_progress_bar(
-            progress_frame, 
-            progress_percent, 
-            self.theme.korean_color, 
-            self.theme.bg_color, 
+            progress_frame,
+            progress_percent,
+            self.theme.korean_color,
+            self.theme.bg_color,
             self.theme.text_color,
-            self.theme.darken_color
+            self.theme.darken_color,
         )
 
         tk.Label(
@@ -223,10 +227,10 @@ class KoreanModule:
             font=self.theme.small_font,
         ).pack(side=tk.LEFT, padx=5)
 
-        # Lesson selection
+        # Random Exercise Selection
         selection_frame = tk.LabelFrame(
             project_frame,
-            text="Select Lesson",
+            text="Random Exercise",
             font=self.theme.pixel_font,
             bg=self.theme.bg_color,
             fg=self.theme.text_color,
@@ -235,78 +239,49 @@ class KoreanModule:
         )
         selection_frame.pack(pady=10, fill=tk.BOTH, expand=True, padx=10)
 
-        # Create scrollable frame for lessons
-        canvas = tk.Canvas(selection_frame, bg=self.theme.bg_color, highlightthickness=0)
-        scrollbar = ttk.Scrollbar(
-            selection_frame, orient="vertical", command=canvas.yview
-        )
-        scrollable_frame = tk.Frame(canvas, bg=self.theme.bg_color)
+        # Random exercise display
+        exercise_display_frame = tk.Frame(selection_frame, bg=self.theme.bg_color)
+        exercise_display_frame.pack(pady=10, fill=tk.X, padx=5)
 
-        scrollable_frame.bind(
-            "<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
-        )
-
-        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-        canvas.configure(yscrollcommand=scrollbar.set)
-
-        canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
-
-        # Lesson dropdown
-        tk.Label(
-            scrollable_frame,
-            text="Select a specific lesson:",
-            bg=self.theme.bg_color,
+        self.exercise_display = tk.Label(
+            exercise_display_frame,
+            text="",
+            bg=self.theme.primary_color,
             fg=self.theme.text_color,
-            font=self.theme.small_font,
-        ).grid(row=0, column=0, sticky="w", pady=5, padx=5)
-
-        self.selected_korean_lesson = tk.StringVar()
-        lesson_dropdown = ttk.Combobox(
-            scrollable_frame,
-            textvariable=self.selected_korean_lesson,
-            values=self.data["korean"]["exercises"]["fundamentals"],
-            width=40,
-            font=self.theme.small_font,
-        )
-        lesson_dropdown.grid(row=0, column=1, pady=5, padx=5)
-
-        # Lesson list with checkmarks for completed lessons
-        completed_label = tk.Label(
-            scrollable_frame,
-            text="Completed Lessons:",
             font=self.theme.pixel_font,
-            bg=self.theme.bg_color,
-            fg=self.theme.text_color,
-        )
-        completed_label.grid(row=1, column=0, columnspan=2, sticky="w", pady=10, padx=5)
-
-        # Lesson list (for demonstration, we're not tracking individual lessons yet)
-        for i, lesson in enumerate(self.data["korean"]["exercises"]["fundamentals"]):
-            completed = (
-                "☑" if i < self.data["korean"]["fundamentals_completed"] else "☐"
-            )
-            tk.Label(
-                scrollable_frame,
-                text=f"{completed} {lesson}",
-                bg=self.theme.bg_color,
-                fg=self.theme.text_color,
-                font=self.theme.small_font,
-            ).grid(row=i + 2, column=0, columnspan=2, sticky="w", pady=2, padx=5)
-
-        # Add lesson button
-        add_lesson_button = self.theme.create_pixel_button(
-            scrollable_frame,
-            "Add New Lesson",
-            lambda: self.add_custom_exercise("korean", "fundamentals"),
-            color="#673AB7",
-        )
-        add_lesson_button.grid(
-            row=len(self.data["korean"]["exercises"]["fundamentals"]) + 2,
-            column=0,
-            columnspan=2,
+            wraplength=400,
+            justify=tk.LEFT,
+            relief=tk.SUNKEN,
+            padx=10,
             pady=10,
         )
+        self.exercise_display.pack(fill=tk.X, pady=5, padx=5)
+
+        self.exercise_tip_text = tk.Label(
+            exercise_display_frame,
+            text="",
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+            font=self.theme.small_font,
+            wraplength=400,
+            justify=tk.LEFT,
+        )
+        self.exercise_tip_text.pack(fill=tk.X, pady=5, padx=5)
+
+        # Store the selected exercise
+        self.selected_korean_lesson = tk.StringVar()
+
+        # Random generator button
+        random_button = self.theme.create_pixel_button(
+            exercise_display_frame,
+            "Get Random Exercise",
+            self.generate_random_korean_exercise,
+            color="#FF9800",
+        )
+        random_button.pack(pady=10)
+
+        # Generate initial random exercise
+        self.generate_random_korean_exercise()
 
         # Button to log progress
         button_frame = tk.Frame(project_frame, bg=self.theme.bg_color)
@@ -319,11 +294,11 @@ class KoreanModule:
             color=self.theme.korean_color,
         )
         log_button.pack(pady=10)
-        
+
     def show_korean_immersion(self, parent_frame):
         """
         Show Korean immersion project details with pixel art styling.
-        
+
         Args:
             parent_frame: Parent frame to place the immersion content
         """
@@ -339,9 +314,10 @@ class KoreanModule:
         )
         project_frame.pack(pady=10, fill=tk.BOTH, expand=True, padx=10)
 
-        description = """Consume Korean content (K-dramas, K-pop, webtoons)
-    Each 30-minute immersion session earns 5 points
-    Practice 2-3 times per week"""
+        description = """
+Consume Korean content (K-dramas, K-pop, webtoons)
+Each 30-minute immersion session earns 5 points
+Practice 2-3 times per week"""
 
         tk.Label(
             project_frame,
@@ -387,12 +363,12 @@ class KoreanModule:
 
         # Create pixel art progress bar
         create_pixel_progress_bar(
-            progress_frame2, 
-            monthly_progress, 
-            self.theme.korean_color, 
-            self.theme.bg_color, 
+            progress_frame2,
+            monthly_progress,
+            self.theme.korean_color,
+            self.theme.bg_color,
             self.theme.text_color,
-            self.theme.darken_color
+            self.theme.darken_color,
         )
 
         tk.Label(
@@ -403,10 +379,10 @@ class KoreanModule:
             font=self.theme.small_font,
         ).pack(side=tk.LEFT, padx=5)
 
-        # Content type selection
+        # Random Immersion Selection
         selection_frame = tk.LabelFrame(
             project_frame,
-            text="Immersion Activity",
+            text="Random Immersion Activity",
             font=self.theme.pixel_font,
             bg=self.theme.bg_color,
             fg=self.theme.text_color,
@@ -415,85 +391,52 @@ class KoreanModule:
         )
         selection_frame.pack(pady=10, fill=tk.BOTH, expand=True, padx=10)
 
-        tk.Label(
-            selection_frame,
-            text="Select immersion type:",
-            bg=self.theme.bg_color,
-            fg=self.theme.text_color,
-            font=self.theme.small_font,
-        ).pack(pady=5, padx=5, anchor="w")
+        # Random immersion display
+        immersion_display_frame = tk.Frame(selection_frame, bg=self.theme.bg_color)
+        immersion_display_frame.pack(pady=10, fill=tk.X, padx=5)
 
-        self.selected_immersion_type = tk.StringVar()
-        immersion_dropdown = ttk.Combobox(
-            selection_frame,
-            textvariable=self.selected_immersion_type,
-            values=self.data["korean"]["exercises"]["immersion"],
-            width=40,
-            font=self.theme.small_font,
-        )
-        immersion_dropdown.pack(pady=5, padx=5)
-
-        # Custom immersion type
-        custom_frame = tk.Frame(selection_frame, bg=self.theme.bg_color)
-        custom_frame.pack(pady=10, fill=tk.X)
-
-        tk.Label(
-            custom_frame,
-            text="Or enter custom immersion activity:",
-            bg=self.theme.bg_color,
-            fg=self.theme.text_color,
-            font=self.theme.small_font,
-        ).pack(side=tk.LEFT, padx=5)
-
-        self.custom_immersion_entry = tk.Entry(
-            custom_frame,
-            width=30,
-            font=self.theme.small_font,
+        self.immersion_display = tk.Label(
+            immersion_display_frame,
+            text="",
             bg=self.theme.primary_color,
             fg=self.theme.text_color,
-        )
-        self.custom_immersion_entry.pack(side=tk.LEFT, padx=5)
-
-        # Add immersion type button
-        add_type_button = self.theme.create_pixel_button(
-            selection_frame,
-            "Add New Immersion Type",
-            lambda: self.add_custom_exercise("korean", "immersion"),
-            color="#673AB7",
-        )
-        add_type_button.pack(pady=10)
-
-        # Content details
-        details_frame = tk.LabelFrame(
-            project_frame,
-            text="Content Details",
             font=self.theme.pixel_font,
-            bg=self.theme.bg_color,
-            fg=self.theme.text_color,
-            relief=tk.RIDGE,
-            bd=3,
+            wraplength=400,
+            justify=tk.LEFT,
+            relief=tk.SUNKEN,
+            padx=10,
+            pady=10,
         )
-        details_frame.pack(pady=10, fill=tk.X, padx=10)
+        self.immersion_display.pack(fill=tk.X, pady=5, padx=5)
 
-        tk.Label(
-            details_frame,
-            text="Title (optional):",
+        self.immersion_tip_text = tk.Label(
+            immersion_display_frame,
+            text="",
             bg=self.theme.bg_color,
             fg=self.theme.text_color,
             font=self.theme.small_font,
-        ).pack(anchor="w", padx=10, pady=5)
-
-        self.immersion_title_entry = tk.Entry(
-            details_frame,
-            width=50,
-            font=self.theme.small_font,
-            bg=self.theme.primary_color,
-            fg=self.theme.text_color,
+            wraplength=400,
+            justify=tk.LEFT,
         )
-        self.immersion_title_entry.pack(padx=10, pady=5, fill=tk.X)
+        self.immersion_tip_text.pack(fill=tk.X, pady=5, padx=5)
+
+        # Store the selected immersion activity
+        self.selected_immersion_type = tk.StringVar()
+
+        # Random generator button
+        random_button = self.theme.create_pixel_button(
+            immersion_display_frame,
+            "Get Random Immersion",
+            self.generate_random_korean_immersion,
+            color="#FF9800",
+        )
+        random_button.pack(pady=10)
+
+        # Generate initial random immersion activity
+        self.generate_random_korean_immersion()
 
         # Duration selection
-        duration_frame = tk.Frame(details_frame, bg=self.theme.bg_color)
+        duration_frame = tk.Frame(project_frame, bg=self.theme.bg_color)
         duration_frame.pack(pady=10, fill=tk.X, padx=10)
 
         tk.Label(
@@ -501,7 +444,7 @@ class KoreanModule:
             text="Duration:",
             bg=self.theme.bg_color,
             fg=self.theme.text_color,
-            font=self.theme.small_font,
+            font=self.theme.pixel_font,
         ).pack(side=tk.LEFT, padx=5)
 
         self.selected_duration = tk.StringVar(value="30 minutes")
@@ -530,15 +473,15 @@ class KoreanModule:
         log_button = self.theme.create_pixel_button(
             button_frame,
             "Log Immersion Session",
-            self.log_korean_immersion_with_details,
+            self.log_korean_immersion_session,
             color=self.theme.korean_color,
         )
         log_button.pack(pady=10)
-        
+
     def show_korean_application(self, parent_frame):
         """
         Show Korean application project details with pixel art styling.
-        
+
         Args:
             parent_frame: Parent frame to place the application content
         """
@@ -554,9 +497,10 @@ class KoreanModule:
         )
         project_frame.pack(pady=10, fill=tk.BOTH, expand=True, padx=10)
 
-        description = """Use Korean practically (writing journal entries, speaking practice)
-    Each application session earns 10 points
-    Practice weekly for 15-30 minutes"""
+        description = """
+Use Korean practically (writing journal entries, speaking practice)
+Each application session earns 10 points
+Practice weekly for 15-30 minutes"""
 
         tk.Label(
             project_frame,
@@ -601,12 +545,12 @@ class KoreanModule:
 
         # Create pixel art progress bar
         create_pixel_progress_bar(
-            progress_frame2, 
-            monthly_progress, 
-            self.theme.korean_color, 
-            self.theme.bg_color, 
+            progress_frame2,
+            monthly_progress,
+            self.theme.korean_color,
+            self.theme.bg_color,
             self.theme.text_color,
-            self.theme.darken_color
+            self.theme.darken_color,
         )
 
         tk.Label(
@@ -617,10 +561,10 @@ class KoreanModule:
             font=self.theme.small_font,
         ).pack(side=tk.LEFT, padx=5)
 
-        # Application type selection
+        # Random Application Selection
         selection_frame = tk.LabelFrame(
             project_frame,
-            text="Application Activity",
+            text="Random Application Activity",
             font=self.theme.pixel_font,
             bg=self.theme.bg_color,
             fg=self.theme.text_color,
@@ -629,32 +573,49 @@ class KoreanModule:
         )
         selection_frame.pack(pady=10, fill=tk.BOTH, expand=True, padx=10)
 
-        tk.Label(
-            selection_frame,
-            text="Select application type:",
+        # Random application display
+        application_display_frame = tk.Frame(selection_frame, bg=self.theme.bg_color)
+        application_display_frame.pack(pady=10, fill=tk.X, padx=5)
+
+        self.application_display = tk.Label(
+            application_display_frame,
+            text="",
+            bg=self.theme.primary_color,
+            fg=self.theme.text_color,
+            font=self.theme.pixel_font,
+            wraplength=400,
+            justify=tk.LEFT,
+            relief=tk.SUNKEN,
+            padx=10,
+            pady=10,
+        )
+        self.application_display.pack(fill=tk.X, pady=5, padx=5)
+
+        self.application_tip_text = tk.Label(
+            application_display_frame,
+            text="",
             bg=self.theme.bg_color,
             fg=self.theme.text_color,
             font=self.theme.small_font,
-        ).pack(pady=5, padx=5, anchor="w")
+            wraplength=400,
+            justify=tk.LEFT,
+        )
+        self.application_tip_text.pack(fill=tk.X, pady=5, padx=5)
 
+        # Store the selected application activity
         self.selected_application_type = tk.StringVar()
-        application_dropdown = ttk.Combobox(
-            selection_frame,
-            textvariable=self.selected_application_type,
-            values=self.data["korean"]["exercises"]["application"],
-            width=40,
-            font=self.theme.small_font,
-        )
-        application_dropdown.pack(pady=5, padx=5)
 
-        # Add application type button
-        add_type_button = self.theme.create_pixel_button(
-            selection_frame,
-            "Add New Application Activity",
-            lambda: self.add_custom_exercise("korean", "application"),
-            color="#673AB7",
+        # Random generator button
+        random_button = self.theme.create_pixel_button(
+            application_display_frame,
+            "Get Random Activity",
+            self.generate_random_korean_application,
+            color="#FF9800",
         )
-        add_type_button.pack(pady=10)
+        random_button.pack(pady=10)
+
+        # Generate initial random application activity
+        self.generate_random_korean_application()
 
         # Application notes
         notes_frame = tk.LabelFrame(
@@ -685,15 +646,15 @@ class KoreanModule:
         log_button = self.theme.create_pixel_button(
             button_frame,
             "Log Application Session",
-            self.log_korean_application_with_details,
+            self.log_korean_application_session,
             color=self.theme.korean_color,
         )
         log_button.pack(pady=10)
-        
+
     def add_custom_exercise(self, module, project_type):
         """
         Add a custom exercise to a project.
-        
+
         Args:
             module: Module name ('art', 'korean', or 'french')
             project_type: Project type ('fundamentals', 'immersion', 'application', etc.)
@@ -745,11 +706,11 @@ class KoreanModule:
             button_frame, "Cancel", dialog.destroy, color="#9E9E9E"
         )
         cancel_button.pack(side=tk.LEFT, padx=10)
-        
+
     def process_add_exercise(self, dialog, module, project_type, exercise_text):
         """
         Process adding the new exercise.
-        
+
         Args:
             dialog: The dialog window to close after processing
             module: Module name ('art', 'korean', or 'french')
@@ -780,11 +741,11 @@ class KoreanModule:
             messagebox.showwarning(
                 "Empty Input", "Please enter an exercise description."
             )
-            
+
     def log_korean_lesson(self, lesson=None):
         """
         Log completion of a Korean lesson.
-        
+
         Args:
             lesson: The specific lesson completed (optional)
         """
@@ -852,10 +813,11 @@ class KoreanModule:
                 )
 
         # Refresh display
-        self.show_module(self.app.main_frame)
-        
-    def log_korean_immersion_with_details(self):
-        """Log a Korean immersion session with details."""
+        # self.show_module(self.app.main_frame)
+        self.update_korean_project_view(self.app.main_frame)
+
+    def log_korean_immersion_session(self):
+        """Log a Korean immersion session."""
         if not self.data["health_status"]:
             messagebox.showinfo(
                 "Health Check Required",
@@ -865,9 +827,14 @@ class KoreanModule:
 
         # Get immersion details
         immersion_type = self.selected_immersion_type.get()
-        custom_type = self.custom_immersion_entry.get().strip()
-        title = self.immersion_title_entry.get().strip()
         duration = self.selected_duration.get()
+
+        # Validate inputs
+        if not immersion_type:
+            messagebox.showwarning(
+                "Missing Information", "Please select an immersion type."
+            )
+            return
 
         # Convert duration to hours
         duration_map = {
@@ -884,20 +851,6 @@ class KoreanModule:
         # Calculate points (5 points per 30 minutes)
         points = int(5 * (hours / 0.5))
 
-        if custom_type:
-            immersion_type = custom_type
-
-            # Add custom immersion type to the list if it's not already there
-            if custom_type not in self.data["korean"]["exercises"]["immersion"]:
-                self.data["korean"]["exercises"]["immersion"].append(custom_type)
-
-        # Validate inputs
-        if not immersion_type:
-            messagebox.showwarning(
-                "Missing Information", "Please select or enter an immersion type."
-            )
-            return
-
         # Add points and hours
         self.data["korean"]["points"] += points
         self.data["korean"]["immersion_hours"] += hours
@@ -910,7 +863,6 @@ class KoreanModule:
         self.data["korean"]["immersion_log"].append(
             {
                 "type": immersion_type,
-                "title": title,
                 "duration": duration,
                 "hours": hours,
                 "timestamp": timestamp,
@@ -929,12 +881,6 @@ class KoreanModule:
             f"You completed {duration} of Korean immersion ({immersion_type})! +{points} points",
         )
 
-        # Clear form fields
-        self.selected_immersion_type.set("")
-        self.custom_immersion_entry.delete(0, tk.END)
-        self.immersion_title_entry.delete(0, tk.END)
-        self.selected_duration.set("30 minutes")
-
         # Check if level up is needed
         new_level, level_increased, streak_bonus = check_level_up(self.data, "korean")
         if level_increased:
@@ -948,11 +894,15 @@ class KoreanModule:
                     "Level Up!", f"Congratulations! You advanced to Level {new_level}!"
                 )
 
+        # Generate a new random immersion activity
+        self.generate_random_korean_immersion()
+
         # Refresh display
-        self.show_module(self.app.main_frame)
-        
-    def log_korean_application_with_details(self):
-        """Log a Korean application session with details."""
+        # self.show_module(self.app.main_frame)
+        self.update_korean_project_view(self.app.main_frame)
+
+    def log_korean_application_session(self):
+        """Log a Korean application session."""
         if not self.data["health_status"]:
             messagebox.showinfo(
                 "Health Check Required",
@@ -1001,7 +951,6 @@ class KoreanModule:
         )
 
         # Clear form fields
-        self.selected_application_type.set("")
         self.application_notes.delete("1.0", tk.END)
 
         # Check if level up is needed
@@ -1017,5 +966,136 @@ class KoreanModule:
                     "Level Up!", f"Congratulations! You advanced to Level {new_level}!"
                 )
 
+        # Generate a new random application activity
+        self.generate_random_korean_application()
+
         # Refresh display
-        self.show_module(self.app.main_frame)
+        # self.show_module(self.app.main_frame)
+        self.update_korean_project_view(self.app.main_frame)
+
+    def generate_random_korean_exercise(self):
+        """Generate a random Korean exercise."""
+        import random
+
+        exercises = self.data["korean"]["exercises"]["fundamentals"]
+        if exercises:
+            selected = random.choice(exercises)
+            self.selected_korean_lesson.set(selected)
+            self.exercise_display.config(text=selected)
+
+            # Optional: display a tip for the exercise
+            exercise_tips = {
+                "Hangul Basics - Consonants & Vowels": "Practice writing each character slowly and deliberately, paying attention to the stroke order.",
+                "Hangul Combinations - Syllable Blocks": "Group characters into syllable blocks by practicing writing simple words like 한국 (hanguk).",
+                "Basic Greetings & Introductions": "Practice introducing yourself in Korean using proper formal expressions.",
+                "Numbers 1-10 in Korean (Native & Sino-Korean)": "Practice counting everyday objects using the appropriate number system.",
+                "Basic Sentence Structure": "Create simple sentences following subject-object-verb word order.",
+                "Present Tense Verb Conjugation": "Practice changing verbs to their present tense form with various subjects.",
+                "Question Formation & Basic Particles": "Form questions using question words and appropriate particle markers.",
+                "Family Vocabulary & Relationships": "Learn how to refer to different family members with the correct terms.",
+                "Food & Restaurant Vocabulary": "Practice ordering food and describing flavors in Korean.",
+                "Time Expressions & Telling Time": "Practice telling the time and making schedule-related sentences.",
+                "Basic Adjectives & Descriptions": "Practice describing objects, people, and places using common adjectives.",
+                "Location Words & Directional Terms": "Practice giving and understanding simple directions in Korean.",
+                "Basic Verbs for Daily Activities": "Practice sentences about daily routines using common action verbs.",
+                "Weather & Seasons Vocabulary": "Construct sentences about weather conditions and seasonal activities.",
+                "Basic Honorifics & Politeness Levels": "Practice the same phrases in different politeness levels.",
+                "Past Tense Verb Conjugation": "Convert present tense sentences to past tense forms.",
+                "Future Tense & Planning Expressions": "Create sentences about plans and future activities.",
+                "Transportation Vocabulary": "Practice conversations about different modes of transportation.",
+                "Shopping & Money Expressions": "Role-play purchasing items and asking about prices in Korean.",
+                "Hobby & Leisure Vocabulary": "Discuss hobbies and free time activities using appropriate vocabulary.",
+                "Counters & Measure Words": "Practice using the correct counters for different types of objects.",
+                "Basic Conjunctions & Connecting Sentences": "Join simple sentences using coordinating conjunctions.",
+                "Simple Negation Patterns": "Convert positive sentences to negative forms using proper structures.",
+                "Expressing Desires & Preferences": "Practice sentences using '-(으)ㄹ래요' and '-(으)ㄹ 거예요' forms.",
+                "Basic Imperative Forms": "Practice giving simple instructions or commands in Korean.",
+            }
+
+            tip = exercise_tips.get(
+                selected,
+                "Focus on this fundamental skill to improve your Korean language foundation.",
+            )
+            self.exercise_tip_text.config(text=f"{tip}")
+        else:
+            self.exercise_tip_text.config(
+                text="No Exercises: No exercises available in the database."
+            )
+
+    def generate_random_korean_immersion(self):
+        """Generate a random Korean immersion activity."""
+        import random
+
+        activities = self.data["korean"]["exercises"]["immersion"]
+        if activities:
+            selected = random.choice(activities)
+            self.selected_immersion_type.set(selected)
+            self.immersion_display.config(text=selected)
+
+            # Optional: display a tip for the immersion activity
+            immersion_tips = {
+                "K-drama watching": "Try watching with Korean subtitles first, then no subtitles for a challenge. Focus on picking up common phrases.",
+                "K-pop music listening": "Look up lyrics and try to sing along. Pay attention to pronunciation and rhythm.",
+                "Korean news reading": "Start with simpler news sites like TTMIK News or EBS. Read headlines first, then full articles.",
+                "Korean podcast listening": "Choose podcasts meant for Korean learners first before moving to native content.",
+                "Korean YouTube channels": "Try channels that teach Korean in Korean or simple vlog content with clear speech.",
+                "Reading webtoons in Korean": "Start with webtoons that have simpler language or those you're already familiar with in translation.",
+                "Korean variety shows": "Shows like 'Running Man' or 'I Live Alone' have lots of on-screen text that can help with comprehension.",
+                "Korean films with subtitles": "Watch once with English subtitles to understand the plot, then again with Korean subtitles.",
+                "Korean language exchange apps": "Try HelloTalk or Tandem to chat with native speakers and learn natural expressions.",
+                "Korean social media browsing": "Follow Korean celebrities, brands, or news accounts on Instagram, Twitter, or Naver.",
+                "Listening to Korean audiobooks": "Start with children's stories or graded readers designed for language learners.",
+                "Reading Korean web novels": "Popular platforms like Naver Series or Kakao Page offer many easy-to-read stories.",
+                "Korean cooking videos": "Food preparation videos often use repetitive, practical vocabulary with visual context.",
+                "Korean animation/cartoons": "Children's content often uses simpler language and clear pronunciation.",
+                "Radio programs in Korean": "News radio offers clear pronunciation, while music programs provide cultural context.",
+            }
+
+            tip = immersion_tips.get(
+                selected,
+                "Immerse yourself in authentic Korean content to develop natural language feel and cultural understanding.",
+            )
+            self.immersion_tip_text.config(text=f"{tip}")
+        else:
+            self.immersion_tip_text.config(
+                text="No Activities: No immersion activities available in the database."
+            )
+
+    def generate_random_korean_application(self):
+        """Generate a random Korean application activity."""
+        import random
+
+        activities = self.data["korean"]["exercises"]["application"]
+        if activities:
+            selected = random.choice(activities)
+            self.selected_application_type.set(selected)
+            self.application_display.config(text=selected)
+
+            # Optional: display a tip for the application activity
+            application_tips = {
+                "Journal writing in Korean": "Even 3-5 sentences about your day can be effective practice. Use a dictionary for new words.",
+                "Conversation practice with language partner": "Prepare 2-3 topics in advance so you're not stuck for things to talk about.",
+                "Describing pictures in Korean": "Start with simple descriptions of what you see, then add more details and opinions.",
+                "Translation exercises": "Try translating song lyrics or short paragraphs from English to Korean.",
+                "Recording yourself speaking Korean": "Record yourself reading a dialogue, then listen back to identify pronunciation issues.",
+                "Role-playing common scenarios": "Practice ordering food, asking directions, or making appointments.",
+                "Writing letters/emails in Korean": "Try writing a thank-you note or formal request to practice different styles.",
+                "Creating flashcards with new vocabulary": "Add sample sentences that show how the word is used in context.",
+                "Summarizing a Korean article/video": "Watch or read something in Korean, then write or speak a summary in your own words.",
+                "Retelling a story in Korean": "Take a familiar story and try to tell it in simple Korean.",
+                "Making a presentation in Korean": "Choose a topic you're passionate about and prepare a short 2-3 minute presentation.",
+                "Teaching someone else basic Korean": "Explaining concepts to others is a great way to solidify your own understanding.",
+                "Language shadowing": "Listen to native speakers and repeat what they say with the same intonation and rhythm.",
+                "Practicing formal vs. informal speech": "Take casual sentences and rewrite them in formal speech (and vice versa).",
+                "Creating a mind map of related vocabulary": "Choose a theme like 'travel' and create a network of related words and phrases.",
+            }
+
+            tip = application_tips.get(
+                selected,
+                "Actively applying your Korean knowledge reinforces learning and builds real communication skills.",
+            )
+            self.application_tip_text.config(text=f"{tip}")
+        else:
+            self.application_tip_text.config(
+                text="No Activities: No application activities available in the database."
+            )

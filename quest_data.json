@@ -1,12 +1,12 @@
 {
     "art": {
-        "points": 0,
+        "points": 7,
         "level": 1,
-        "streak": 0,
-        "last_practice": null,
+        "streak": 1,
+        "last_practice": "2025-03-29",
         "health_status": true,
-        "fundamentals_completed": 0,
-        "sketchbook_pages": 0,
+        "fundamentals_completed": 1,
+        "sketchbook_pages": 1,
         "accountability_posts": 0,
         "rewards_unlocked": [],
         "exercises": {
@@ -51,15 +51,31 @@
                 "Post progress on social media",
                 "Share before/after comparison"
             ]
-        }
+        },
+        "completed_exercises": [
+            {
+                "exercise": "Shape Accuracy - Drawing basic geometric forms",
+                "type": "fundamentals",
+                "timestamp": "2025-03-29 20:20",
+                "points": 2
+            }
+        ],
+        "drawing_log": [
+            {
+                "type": "Still life",
+                "notes": "",
+                "timestamp": "2025-03-29 20:21",
+                "points": 5
+            }
+        ]
     },
     "korean": {
-        "points": 0,
+        "points": 19,
         "level": 1,
-        "streak": 0,
-        "last_practice": null,
-        "fundamentals_completed": 0,
-        "immersion_hours": 0,
+        "streak": 1,
+        "last_practice": "2025-03-29",
+        "fundamentals_completed": 2,
+        "immersion_hours": 1.5,
         "application_sessions": 0,
         "rewards_unlocked": [],
         "exercises": {
@@ -109,16 +125,54 @@
                 "Text chat with Korean speaker",
                 "Teach someone basic Korean phrases"
             ]
-        }
+        },
+        "completed_lessons": [
+            {
+                "lesson": "Basic honorifics",
+                "type": "fundamentals",
+                "timestamp": "2025-03-29 22:24",
+                "points": 2
+            },
+            {
+                "lesson": "Basic verbs and conjugation",
+                "type": "fundamentals",
+                "timestamp": "2025-03-29 22:25",
+                "points": 2
+            }
+        ],
+        "immersion_log": [
+            {
+                "type": "Watch K-drama (30 min)",
+                "title": "",
+                "duration": "30 minutes",
+                "hours": 0.5,
+                "timestamp": "2025-03-29 22:27",
+                "points": 5
+            },
+            {
+                "type": "Watch K-drama (30 min)",
+                "duration": "30 minutes",
+                "hours": 0.5,
+                "timestamp": "2025-03-29 22:35",
+                "points": 5
+            },
+            {
+                "type": "Listen to K-pop songs",
+                "duration": "30 minutes",
+                "hours": 0.5,
+                "timestamp": "2025-03-29 22:38",
+                "points": 5
+            }
+        ]
     },
     "french": {
-        "points": 0,
+        "points": 17,
         "level": 1,
-        "streak": 0,
-        "last_practice": null,
-        "fundamentals_completed": 0,
-        "immersion_hours": 0,
-        "application_sessions": 0,
+        "streak": 1,
+        "last_practice": "2025-03-29",
+        "fundamentals_completed": 1,
+        "immersion_hours": 0.5,
+        "application_sessions": 1,
         "rewards_unlocked": [],
         "exercises": {
             "fundamentals": [
@@ -166,7 +220,32 @@
                 "Text chat with French speaker",
                 "Teach someone basic French phrases"
             ]
-        }
+        },
+        "completed_lessons": [
+            {
+                "lesson": "Food and dining vocabulary",
+                "type": "fundamentals",
+                "timestamp": "2025-03-29 22:45",
+                "points": 2
+            }
+        ],
+        "immersion_log": [
+            {
+                "type": "Read French news articles",
+                "duration": "30 minutes",
+                "hours": 0.5,
+                "timestamp": "2025-03-29 22:46",
+                "points": 5
+            }
+        ],
+        "application_log": [
+            {
+                "type": "Order at restaurant in French",
+                "notes": "",
+                "timestamp": "2025-03-29 22:46",
+                "points": 10
+            }
+        ]
     },
     "diss": {
         "points": 0,
