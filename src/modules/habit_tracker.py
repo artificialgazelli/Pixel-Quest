@@ -421,7 +421,7 @@ class HabitTracker:
             control_frame,
             "Add Check-in",
             self.add_new_check_in,
-            color=self.theme.habit_color,
+            color=self.theme.habit_color,  # Use the theme's habit color
         )
         add_checkin_button.pack(side=tk.RIGHT, padx=10)
         
@@ -457,7 +457,7 @@ class HabitTracker:
             text="Check-in Details",
             font=self.theme.pixel_font,
             bg=self.theme.bg_color,
-            fg=self.theme.habit_color,
+            fg=self.theme.habit_color,  # Use the theme's habit color
             padx=10,
             pady=10,
         )
@@ -483,7 +483,7 @@ class HabitTracker:
             text="Habit Overview",
             font=self.theme.pixel_font,
             bg=self.theme.bg_color,
-            fg=self.theme.habit_color,
+            fg=self.theme.habit_color,  # Use the theme's habit color
         )
         overview_frame.pack(fill=tk.X, padx=10, pady=10)
         
@@ -534,7 +534,7 @@ class HabitTracker:
             text=str(total_habits),
             font=self.theme.heading_font,
             bg=self.theme.bg_color,
-            fg=self.theme.habit_color,
+            fg=self.theme.habit_color,  # Use the theme's habit color
         ).pack()
         
         # Active habits
@@ -603,7 +603,7 @@ class HabitTracker:
             text="Habit Performance",
             font=self.theme.pixel_font,
             bg=self.theme.bg_color,
-            fg=self.theme.habit_color,
+            fg=self.theme.habit_color,  # Use the theme's habit color
         )
         performance_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
@@ -938,7 +938,7 @@ class HabitTracker:
                 freq_var.get(),
                 dialog,
             ),
-            color="#4CAF50",
+            color=self.theme.habit_color,  # Use the theme's habit color
         )
         add_button.pack(side=tk.LEFT, padx=10)
         
@@ -1190,7 +1190,7 @@ class HabitTracker:
             title_frame,
             "Add Check-in",
             lambda: self.add_check_in_for_date(date_str),
-            color="#4CAF50",
+            color=self.theme.habit_color,  # Use the theme's habit color
         )
         add_button.pack(side=tk.RIGHT)
         
@@ -1418,7 +1418,7 @@ class HabitTracker:
                 notes_text.get("1.0", tk.END).strip(),
                 dialog,
             ),
-            color="#4CAF50",
+            color=self.theme.habit_color,  # Use the theme's habit color
         )
         add_button.pack(side=tk.LEFT, padx=10)
         
