@@ -298,7 +298,7 @@ class CategoriesTab:
         # Color presets
         color_presets_frame = tk.Frame(dialog, bg=self.theme.bg_color)
         color_presets_frame.pack(fill=tk.X, padx=20, pady=5)
-        
+
         tk.Label(
             color_presets_frame,
             text="Color Presets:",
@@ -306,7 +306,7 @@ class CategoriesTab:
             bg=self.theme.bg_color,
             fg=self.theme.text_color,
         ).pack(side=tk.LEFT)
-        
+
         # Common colors for quick selection
         preset_colors = [
             "#4CAF50",  # Green
@@ -316,7 +316,7 @@ class CategoriesTab:
             "#9C27B0",  # Purple
             "#E91E63",  # Pink
         ]
-        
+
         for color in preset_colors:
             preset_button = tk.Frame(
                 color_presets_frame,
@@ -326,12 +326,9 @@ class CategoriesTab:
                 cursor="hand2",
             )
             preset_button.pack(side=tk.LEFT, padx=5)
-            
+
             # Bind click to set the color
-            preset_button.bind(
-                "<Button-1>",
-                lambda e, c=color: color_var.set(c)
-            )
+            preset_button.bind("<Button-1>", lambda e, c=color: color_var.set(c))
 
         # Update color preview when color changes
         def update_preview(*args):
@@ -494,11 +491,11 @@ class CategoriesTab:
             height=20,
         )
         color_preview.pack(side=tk.LEFT, padx=10)
-        
+
         # Color presets
         color_presets_frame = tk.Frame(dialog, bg=self.theme.bg_color)
         color_presets_frame.pack(fill=tk.X, padx=20, pady=5)
-        
+
         tk.Label(
             color_presets_frame,
             text="Color Presets:",
@@ -506,7 +503,7 @@ class CategoriesTab:
             bg=self.theme.bg_color,
             fg=self.theme.text_color,
         ).pack(side=tk.LEFT)
-        
+
         # Common colors for quick selection
         preset_colors = [
             "#4CAF50",  # Green
@@ -516,7 +513,7 @@ class CategoriesTab:
             "#9C27B0",  # Purple
             "#E91E63",  # Pink
         ]
-        
+
         for color in preset_colors:
             preset_button = tk.Frame(
                 color_presets_frame,
@@ -526,12 +523,9 @@ class CategoriesTab:
                 cursor="hand2",
             )
             preset_button.pack(side=tk.LEFT, padx=5)
-            
+
             # Bind click to set the color
-            preset_button.bind(
-                "<Button-1>",
-                lambda e, c=color: color_var.set(c)
-            )
+            preset_button.bind("<Button-1>", lambda e, c=color: color_var.set(c))
 
         # Update color preview when color changes
         def update_preview(*args):
