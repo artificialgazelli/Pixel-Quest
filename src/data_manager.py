@@ -317,6 +317,66 @@ class DataManager:
                     ],
                 },
             },
+            # New habit tracking data structure
+            "habits": {
+                "daily_habits": [
+                    {
+                        "name": "Early wakeup",
+                        "icon": "☀️",
+                        "active": True,
+                        "frequency": "daily",
+                        "streak": 0,
+                        "completed_dates": []
+                    },
+                    {
+                        "name": "Exercise",
+                        "icon": "🏃",
+                        "active": True,
+                        "frequency": "daily",
+                        "streak": 0,
+                        "completed_dates": []
+                    },
+                    {
+                        "name": "Reading",
+                        "icon": "📚",
+                        "active": True,
+                        "frequency": "daily",
+                        "streak": 0,
+                        "completed_dates": []
+                    },
+                    {
+                        "name": "Meditation",
+                        "icon": "🧘",
+                        "active": True,
+                        "frequency": "daily", 
+                        "streak": 0,
+                        "completed_dates": []
+                    },
+                    {
+                        "name": "Drink water",
+                        "icon": "💧",
+                        "active": True,
+                        "frequency": "daily",
+                        "streak": 0,
+                        "completed_dates": []
+                    }
+                ],
+                "custom_habits": [],
+                "check_ins": [
+                    {
+                        "name": "Doctor Appointments",
+                        "icon": "🩺",
+                        "dates": [],
+                        "notes": {}
+                    },
+                    {
+                        "name": "Dentist",
+                        "icon": "🦷",
+                        "dates": [],
+                        "notes": {}
+                    }
+                ]
+            },
             "health_status": True,
             "last_health_check": None,
             "rewards": {
@@ -369,6 +429,11 @@ class DataManager:
                 # Check for diss module
                 if "diss" not in self.data:
                     self.data["diss"] = default_data["diss"]
+                    data_updated = True
+                
+                # Check for habits module
+                if "habits" not in self.data:
+                    self.data["habits"] = default_data["habits"]
                     data_updated = True
                     
                 # You can add checks for other modules here if needed
