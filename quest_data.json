@@ -559,5 +559,73 @@
             "Weekend creative retreat",
             "Professional drawing tablet"
         ]
+    },
+    "todo": {
+        "groups": [
+            {
+                "name": "Work",
+                "color": "#4CAF50"
+            },
+            {
+                "name": "Personal",
+                "color": "#2196F3"
+            },
+            {
+                "name": "Dissertation",
+                "color": "#9C27B0"
+            },
+            {
+                "name": "Shopping",
+                "color": "#FF9800"
+            }
+        ],
+        "tasks": [
+            {
+                "id": "task_1",
+                "title": "Complete project proposal",
+                "description": "Write and submit the project proposal document",
+                "created_date": "2025-03-29",
+                "due_date": "2025-04-05",
+                "group": "Work",
+                "priority": "high",
+                "status": "active",
+                "completed_date": null,
+                "recurrence": null
+            },
+            {
+                "id": "task_2",
+                "title": "Buy groceries",
+                "description": "Buy vegetables, fruits, and other essentials",
+                "created_date": "2025-03-29",
+                "due_date": "2025-03-29",
+                "group": "Shopping",
+                "priority": "medium",
+                "status": "active",
+                "completed_date": null,
+                "recurrence": null
+            },
+            {
+                "id": "task_3",
+                "title": "Work on dissertation",
+                "description": "Write at least 500 words for the dissertation",
+                "created_date": "2025-03-29",
+                "due_date": "2025-03-29",
+                "group": "Dissertation",
+                "priority": "high",
+                "status": "active",
+                "completed_date": null,
+                "recurrence": {
+                    "type": "weekly",
+                    "days": [
+                        0,
+                        1,
+                        2,
+                        3,
+                        4
+                    ],
+                    "end_date": null
+                }
+            }
+        ]
     }
 }
