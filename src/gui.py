@@ -13,7 +13,7 @@ from src.modules.diss_module import DissModule
 from src.modules.statistics import StatisticsModule
 from src.modules.settings import SettingsModule
 from src.modules.rewards import RewardsModule
-from src.modules.health import HealthCheckModule
+from src.modules.habit_tracker import HabitTracker
 
 
 class QuestGame:
@@ -60,7 +60,7 @@ class QuestGame:
         self.statistics_module = StatisticsModule(self, self.data_manager, self.theme)
         self.settings_module = SettingsModule(self, self.data_manager, self.theme)
         self.rewards_module = RewardsModule(self, self.data_manager, self.theme)
-        self.health_module = HealthCheckModule(self, self.data_manager, self.theme)
+        self.habit_tracker = HabitTracker(self, self.data_manager, self.theme)
 
     def clear_frame(self):
         """Clear all widgets from the main frame."""
@@ -290,39 +290,76 @@ class QuestGame:
         )
         diss_streak.pack()
 
-        # Health check
-        health_frame = tk.Frame(parent, bg=self.theme.bg_color, relief=tk.RIDGE, bd=3)
-        health_frame.pack(pady=10, fill=tk.X)
+        # Habit Tracker
+        habit_frame = tk.Frame(parent, bg=self.theme.bg_color, relief=tk.RIDGE, bd=3)
+        habit_frame.pack(pady=10, fill=tk.X)
 
-        health_label = tk.Label(
-            health_frame,
-            text="Daily Health Check",
+        habit_label = tk.Label(
+            habit_frame,
+            text="Habit Tracker",
             font=self.theme.pixel_font,
             bg=self.theme.bg_color,
-            fg=self.theme.text_color,
+            fg="#673AB7",  # Purple color for habit tracker
         )
-        health_label.pack(pady=5)
+        habit_label.pack(pady=5)
 
-        health_status = (
-            "✓ Completed" if self.data["health_status"] else "✗ Not Completed"
+        # Get habit completion statistics for today
+        habits = self.data.get("habits", {})
+        daily_habits = habits.get("daily_habits", []) + habits.get("custom_habits", [])
+        
+        # Count active habits
+        active_habits = [h for h in daily_habits if h.get("active", True)]
+        total_active = len(active_habits)
+        
+        # Count completed habits for today
+        today = datetime.now().date().strftime("%Y-%m-%d")
+        completed_today = sum(
+            1 for h in active_habits if today in h.get("completed_dates", [])
         )
-        status_color = "#4CAF50" if self.data["health_status"] else "#F44336"
-        health_status_label = tk.Label(
-            health_frame,
-            text=f"Today's status: {health_status}",
+        
+        # Calculate completion percentage
+        completion_pct = int((completed_today / total_active) * 100) if total_active > 0 else 0
+        
+        # Display habit completion status
+        status_color = "#4CAF50" if completion_pct >= 80 else "#FFC107" if completion_pct >= 50 else "#F44336"
+        
+        habit_status_label = tk.Label(
+            habit_frame,
+            text=f"Today's completion: {completed_today}/{total_active} habits ({completion_pct}%)",
             font=self.theme.small_font,
             bg=self.theme.bg_color,
             fg=status_color,
         )
-        health_status_label.pack(pady=5)
+        habit_status_label.pack(pady=5)
 
-        health_button = self.theme.create_pixel_button(
-            health_frame,
-            "Complete Health Check",
-            self.health_module.do_health_check,
-            color="#673AB7",
+        # Create a simple progress bar
+        progress_frame = tk.Frame(habit_frame, bg=self.theme.bg_color)
+        progress_frame.pack(fill=tk.X, padx=20, pady=5)
+        
+        progress_bg = tk.Frame(
+            progress_frame,
+            bg=self.theme.darken_color(self.theme.primary_color),
+            height=10,
         )
-        health_button.pack(pady=5)
+        progress_bg.pack(fill=tk.X)
+        
+        progress_width = int((completion_pct / 100) * progress_bg.winfo_reqwidth())
+        progress_bar = tk.Frame(
+            progress_bg,
+            bg=status_color,
+            height=10,
+            width=progress_width,
+        )
+        progress_bar.place(x=0, y=0)
+
+        # Open Habit Tracker button
+        habit_button = self.theme.create_pixel_button(
+            habit_frame,
+            "Open Habit Tracker",
+            lambda: self.show_module("habits"),
+            color="#673AB7",  # Purple
+        )
+        habit_button.pack(pady=5)
 
         # Rewards
         rewards_button = self.theme.create_pixel_button(
@@ -335,7 +372,7 @@ class QuestGame:
         Show the selected module interface.
 
         Args:
-            module_name: Name of the module to show ('art', 'korean', 'french', or 'diss')
+            module_name: Name of the module to show ('art', 'korean', 'french', 'diss', or 'habits')
         """
         self.clear_frame()
 
@@ -345,6 +382,7 @@ class QuestGame:
             "korean": self.korean_module,
             "french": self.french_module,
             "diss": self.diss_module,
+            "habits": self.habit_tracker,
         }
 
         # Display the selected module
