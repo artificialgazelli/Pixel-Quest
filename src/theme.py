@@ -102,7 +102,7 @@ class PixelTheme:
         self.style.map("TNotebook.Tab", background=[("selected", self.secondary_color)])
 
     def create_pixel_button(
-        self, parent, text, command, color=None, width=None, height=None
+        self, parent, text, command, color=None, width=None, height=None, small=False
     ):
         """
         Create a button with pixel art styling.
@@ -114,6 +114,7 @@ class PixelTheme:
             color: Button color (defaults to primary color)
             width: Button width
             height: Button height
+            small: If True, use smaller font and padding
 
         Returns:
             The created button widget
@@ -121,17 +122,24 @@ class PixelTheme:
         if color is None:
             color = self.primary_color
 
+        # Choose font based on small parameter
+        button_font = self.small_font if small else self.pixel_font
+
+        # Adjust padding for small buttons
+        padx_value = 5 if small else 10
+        pady_value = 2 if small else 5
+
         button = tk.Button(
             parent,
             text=text,
             command=command,
-            font=self.pixel_font,
+            font=button_font,
             bg=color,
             fg=self.text_color,
             relief=tk.RIDGE,
             bd=3,
-            padx=10,
-            pady=5,
+            padx=padx_value,
+            pady=pady_value,
             width=width,
             height=height,
             activebackground=self.secondary_color,

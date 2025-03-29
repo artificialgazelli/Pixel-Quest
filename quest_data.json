@@ -133,7 +133,7 @@
                 "Gender and agreement",
                 "Basic adjectives and placement",
                 "Question formation",
-                "Past tense - pass\u00c3\u00a9 compos\u00c3\u00a9",
+                "Past tense - pass\u00e9 compos\u00e9",
                 "Past tense - imparfait",
                 "Future tense - simple",
                 "Prepositions of place",
@@ -163,7 +163,6 @@
                 "Describe photos in French",
                 "Order at restaurant in French",
                 "Write shopping list in French",
-                "Write short story in French",
                 "Text chat with French speaker",
                 "Teach someone basic French phrases"
             ]
@@ -283,56 +282,23 @@
             ]
         }
     },
-    "health_status": true,
-    "last_health_check": null,
-    "rewards": {
-        "small": [
-            "New art supplies (pencils, pens)",
-            "Korean snacks package",
-            "French pastry treat",
-            "Download a new playlist",
-            "Movie night",
-            "Special coffee or tea",
-            "New stickers for journal",
-            "Bath bomb or relaxation item",
-            "Small plant or succulent",
-            "Art print or bookmark"
-        ],
-        "medium": [
-            "Art instruction book",
-            "Korean webtoon collection",
-            "French film collection",
-            "Nice sketchbook or journal",
-            "Language learning app subscription (1 month)",
-            "Art supply set (markers, paints)",
-            "Korean or French cuisine cookbook",
-            "Online class or workshop",
-            "Streaming service subscription (1 month)",
-            "Museum or gallery admission"
-        ],
-        "large": [
-            "Premium art course",
-            "TOPIK prep materials full set",
-            "Trip to a French cafe or restaurant",
-            "Art software or digital tools",
-            "Language tutoring session",
-            "Premium art supplies kit",
-            "Cultural experience or event ticket",
-            "Annual subscription to learning platform",
-            "Weekend creative retreat",
-            "Professional drawing tablet"
-        ]
-    },
     "habits": {
         "daily_habits": [
+            {
+                "name": "Early wakeup",
+                "icon": "\u2600\ufe0f",
+                "active": true,
+                "frequency": "daily",
+                "streak": 0,
+                "completed_dates": []
+            },
             {
                 "name": "Exercise",
                 "icon": "\ud83c\udfc3",
                 "active": true,
                 "frequency": "daily",
                 "streak": 0,
-                "completed_dates": [],
-                "category": "Personal"
+                "completed_dates": []
             },
             {
                 "name": "Reading",
@@ -340,8 +306,7 @@
                 "active": true,
                 "frequency": "daily",
                 "streak": 0,
-                "completed_dates": [],
-                "category": "Personal"
+                "completed_dates": []
             },
             {
                 "name": "Go to bed early",
@@ -354,15 +319,6 @@
             }
         ],
         "custom_habits": [
-            {
-                "name": "Go To Bed Early",
-                "icon": "\ud83d\udca4",
-                "category": "Health",
-                "frequency": "daily",
-                "active": true,
-                "streak": 0,
-                "completed_dates": []
-            },
             {
                 "name": "Learn Korean",
                 "icon": "\ud83c\uddf0\ud83c\uddf7",
@@ -424,15 +380,6 @@
                 "interval": 2,
                 "streak": 0,
                 "completed_dates": []
-            },
-            {
-                "name": "Wake Up Early",
-                "icon": "\ud83d\udca4",
-                "category": "Health",
-                "frequency": "daily",
-                "active": true,
-                "streak": 0,
-                "completed_dates": []
             }
         ],
         "check_ins": [
@@ -441,7 +388,6 @@
                 "icon": "\ud83e\ude7a",
                 "dates": [],
                 "notes": {},
-                "category": "Health",
                 "subcategories": [
                     {
                         "name": "Dermatologist",
@@ -473,8 +419,7 @@
                 "name": "Dentist",
                 "icon": "\ud83e\uddb7",
                 "dates": [],
-                "notes": {},
-                "category": "Health"
+                "notes": {}
             }
         ],
         "categories": [
@@ -494,6 +439,46 @@
                 "name": "Personal",
                 "color": "#E91E63"
             }
+        ]
+    },
+    "health_status": true,
+    "last_health_check": null,
+    "rewards": {
+        "small": [
+            "New art supplies (pencils, pens)",
+            "Korean snacks package",
+            "French pastry treat",
+            "Download a new playlist",
+            "Movie night",
+            "Special coffee or tea",
+            "New stickers for journal",
+            "Bath bomb or relaxation item",
+            "Small plant or succulent",
+            "Art print or bookmark"
+        ],
+        "medium": [
+            "Art instruction book",
+            "Korean webtoon collection",
+            "French film collection",
+            "Nice sketchbook or journal",
+            "Language learning app subscription (1 month)",
+            "Art supply set (markers, paints)",
+            "Korean or French cuisine cookbook",
+            "Online class or workshop",
+            "Streaming service subscription (1 month)",
+            "Museum or gallery admission"
+        ],
+        "large": [
+            "Premium art course",
+            "TOPIK prep materials full set",
+            "Trip to a French cafe or restaurant",
+            "Art software or digital tools",
+            "Language tutoring session",
+            "Premium art supplies kit",
+            "Cultural experience or event ticket",
+            "Annual subscription to learning platform",
+            "Weekend creative retreat",
+            "Professional drawing tablet"
         ]
     }
 }
