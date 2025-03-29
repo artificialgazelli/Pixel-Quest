@@ -5,6 +5,7 @@ Handles displaying statistics and progress tracking.
 
 import tkinter as tk
 from tkinter import ttk, messagebox
+from datetime import datetime, timedelta
 from src.utils import create_pixel_progress_bar
 from src.modules.diss_module import DissModule
 
@@ -54,12 +55,14 @@ class StatisticsModule:
         korean_stats_tab = tk.Frame(stats_notebook, bg=self.theme.bg_color)
         french_stats_tab = tk.Frame(stats_notebook, bg=self.theme.bg_color)
         diss_stats_tab = tk.Frame(stats_notebook, bg=self.theme.bg_color)
+        habits_stats_tab = tk.Frame(stats_notebook, bg=self.theme.bg_color)
 
         stats_notebook.add(overview_tab, text="Overview")
         stats_notebook.add(art_stats_tab, text="Art Stats")
         stats_notebook.add(korean_stats_tab, text="Korean Stats")
         stats_notebook.add(french_stats_tab, text="French Stats")
         stats_notebook.add(diss_stats_tab, text="Diss Stats")
+        stats_notebook.add(habits_stats_tab, text="Habits")
 
         # === OVERVIEW TAB ===
         self.create_overview_stats(overview_tab)
@@ -75,6 +78,9 @@ class StatisticsModule:
 
         # === DISS STATS TAB ===
         self.create_module_stats(diss_stats_tab, "diss")
+        
+        # === HABITS STATS TAB ===
+        self.create_habits_stats(habits_stats_tab)
 
         # Export button
         export_button = self.theme.create_pixel_button(
@@ -102,6 +108,14 @@ class StatisticsModule:
         for module in ["art", "korean", "french", "diss"]:
             if self.data[module]["last_practice"]:
                 active_days.add(self.data[module]["last_practice"])
+                
+        # Add days from habits
+        if "habits" in self.data:
+            habits = self.data["habits"]
+            for habit_type in ["daily_habits", "custom_habits"]:
+                for habit in habits.get(habit_type, []):
+                    for date in habit.get("completed_dates", []):
+                        active_days.add(date)
 
         # Summary frame
         summary_frame = tk.LabelFrame(
@@ -146,6 +160,30 @@ class StatisticsModule:
             bg=self.theme.bg_color,
             fg=self.theme.text_color,
         ).pack(anchor="w", pady=5)
+        
+        # Habits overview
+        if "habits" in self.data:
+            habits = self.data["habits"]
+            
+            # Count active habits
+            active_habits = sum(
+                1 for h in habits.get("daily_habits", []) + habits.get("custom_habits", [])
+                if h.get("active", True)
+            )
+            
+            # Find max streak
+            max_streak = 0
+            for habit_type in ["daily_habits", "custom_habits"]:
+                for habit in habits.get(habit_type, []):
+                    max_streak = max(max_streak, habit.get("streak", 0))
+            
+            tk.Label(
+                summary_frame,
+                text=f"Active Habits: {active_habits} | Longest Streak: {max_streak} days",
+                font=self.theme.pixel_font,
+                bg=self.theme.bg_color,
+                fg="#673AB7",  # Purple for habits
+            ).pack(anchor="w", pady=5)
 
         # Distribution frame
         dist_frame = tk.LabelFrame(
@@ -398,6 +436,43 @@ class StatisticsModule:
                                 "points": int(session["hours"] * 10),
                             }
                         )
+                        
+        # Habit activities
+        if "habits" in self.data:
+            habits = self.data["habits"]
+            
+            # Daily habits and custom habits
+            for habit_type in ["daily_habits", "custom_habits"]:
+                for habit in habits.get(habit_type, []):
+                    for date in habit.get("completed_dates", []):
+                        # Format as timestamp for consistency 
+                        timestamp = f"{date} 12:00:00"
+                        
+                        all_activities.append(
+                            {
+                                "module": "habit",
+                                "type": "daily",
+                                "description": f"Completed '{habit['name']}' habit",
+                                "timestamp": timestamp,
+                                "points": 5,  # Assign a consistent point value
+                            }
+                        )
+            
+            # Check-ins
+            for check_in in habits.get("check_ins", []):
+                for date in check_in.get("dates", []):
+                    # Format as timestamp for consistency
+                    timestamp = f"{date} 12:00:00"
+                    
+                    all_activities.append(
+                        {
+                            "module": "habit",
+                            "type": "check-in",
+                            "description": f"{check_in['name']} check-in",
+                            "timestamp": timestamp,
+                            "points": 10,  # Assign a higher point value for check-ins
+                        }
+                    )
 
         # Reward claims
         if "unlocked_rewards" in self.data:
@@ -449,7 +524,8 @@ class StatisticsModule:
             "art": self.theme.art_color,
             "korean": self.theme.korean_color,
             "french": self.theme.french_color,
-            "diss": self.theme.diss_color,  # Add dissertation color
+            "diss": self.theme.diss_color,
+            "habit": "#673AB7",  # Purple for habits
             "reward": "#E91E63",
         }
 
@@ -725,6 +801,404 @@ class StatisticsModule:
             # Create a temporary instance of DissModule to use its method
             diss_module = DissModule(self.app, self.data_manager, self.theme)
             diss_module.create_activity_breakdown(activity_frame)
+    
+    def create_habits_stats(self, parent):
+        """
+        Create statistics display for habit tracking.
+        
+        Args:
+            parent: Parent widget for the habit statistics
+        """
+        # Check if habits data exists
+        if "habits" not in self.data:
+            tk.Label(
+                parent,
+                text="No habit data available yet. Start tracking habits to see statistics!",
+                font=self.theme.pixel_font,
+                bg=self.theme.bg_color,
+                fg=self.theme.text_color,
+                wraplength=400,
+                justify="center",
+            ).pack(pady=50)
+            return
+            
+        habits = self.data["habits"]
+        daily_habits = habits.get("daily_habits", [])
+        custom_habits = habits.get("custom_habits", [])
+        check_ins = habits.get("check_ins", [])
+        
+        all_habits = daily_habits + custom_habits
+        
+        # Summary frame
+        summary_frame = tk.LabelFrame(
+            parent,
+            text="Habits Summary",
+            font=self.theme.pixel_font,
+            bg=self.theme.bg_color,
+            fg="#673AB7",  # Purple for habit tracker
+            padx=10,
+            pady=10,
+            relief=tk.RIDGE,
+            bd=3,
+        )
+        summary_frame.pack(fill=tk.X, padx=10, pady=10)
+        
+        # Stats grid (2x2)
+        stats_grid = tk.Frame(summary_frame, bg=self.theme.bg_color)
+        stats_grid.pack(fill=tk.X, pady=10)
+        
+        # Total habits
+        total_habits = len(all_habits)
+        active_habits = sum(1 for h in all_habits if h.get("active", True))
+        
+        # Count habits completed today
+        today = datetime.now().date().strftime("%Y-%m-%d")
+        completed_today = sum(
+            1 for h in all_habits if h.get("active", True) and today in h.get("completed_dates", [])
+        )
+        
+        # Completion rate
+        completion_rate = (
+            int((completed_today / active_habits) * 100) if active_habits > 0 else 0
+        )
+        
+        # Calculate streaks
+        longest_streak = max([h.get("streak", 0) for h in all_habits], default=0)
+        
+        # Top row stats
+        stat_frame1 = tk.Frame(stats_grid, bg=self.theme.bg_color, padx=10, pady=5)
+        stat_frame1.grid(row=0, column=0, padx=10, pady=5)
+        
+        tk.Label(
+            stat_frame1,
+            text="🧠 Total Habits",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+        ).pack()
+        
+        tk.Label(
+            stat_frame1,
+            text=str(total_habits),
+            font=self.theme.heading_font,
+            bg=self.theme.bg_color,
+            fg="#673AB7",
+        ).pack()
+        
+        # Active habits
+        stat_frame2 = tk.Frame(stats_grid, bg=self.theme.bg_color, padx=10, pady=5)
+        stat_frame2.grid(row=0, column=1, padx=10, pady=5)
+        
+        tk.Label(
+            stat_frame2,
+            text="✅ Active Habits",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+        ).pack()
+        
+        tk.Label(
+            stat_frame2,
+            text=str(active_habits),
+            font=self.theme.heading_font,
+            bg=self.theme.bg_color,
+            fg="#4CAF50",
+        ).pack()
+        
+        # Today's completion
+        stat_frame3 = tk.Frame(stats_grid, bg=self.theme.bg_color, padx=10, pady=5)
+        stat_frame3.grid(row=1, column=0, padx=10, pady=5)
+        
+        tk.Label(
+            stat_frame3,
+            text="📅 Today's Completion",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+        ).pack()
+        
+        completion_color = "#4CAF50" if completion_rate >= 80 else "#FFC107" if completion_rate >= 50 else "#F44336"
+        
+        tk.Label(
+            stat_frame3,
+            text=f"{completion_rate}%",
+            font=self.theme.heading_font,
+            bg=self.theme.bg_color,
+            fg=completion_color,
+        ).pack()
+        
+        # Longest streak
+        stat_frame4 = tk.Frame(stats_grid, bg=self.theme.bg_color, padx=10, pady=5)
+        stat_frame4.grid(row=1, column=1, padx=10, pady=5)
+        
+        tk.Label(
+            stat_frame4,
+            text="🔥 Longest Streak",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+        ).pack()
+        
+        tk.Label(
+            stat_frame4,
+            text=f"{longest_streak} days",
+            font=self.theme.heading_font,
+            bg=self.theme.bg_color,
+            fg="#FF5722",
+        ).pack()
+        
+        # Weekly completion chart
+        weekly_frame = tk.LabelFrame(
+            parent,
+            text="Weekly Habit Completion",
+            font=self.theme.pixel_font,
+            bg=self.theme.bg_color,
+            fg="#673AB7",
+            padx=10,
+            pady=10,
+            relief=tk.RIDGE,
+            bd=3,
+        )
+        weekly_frame.pack(fill=tk.X, padx=10, pady=10)
+        
+        # Generate dates for the past 7 days
+        today = datetime.now().date()
+        past_dates = [(today - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(6, -1, -1)]
+        weekdays = [(today - timedelta(days=i)).strftime("%a") for i in range(6, -1, -1)]
+        day_numbers = [(today - timedelta(days=i)).day for i in range(6, -1, -1)]
+        
+        # Create header with dates
+        date_frame = tk.Frame(weekly_frame, bg=self.theme.bg_color)
+        date_frame.pack(fill=tk.X, pady=5)
+        
+        # Create empty column for habit names
+        empty_label = tk.Label(
+            date_frame,
+            text="",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            width=15,
+        )
+        empty_label.grid(row=0, column=0, padx=2)
+        
+        # Create date labels
+        for i, (weekday, day_num) in enumerate(zip(weekdays, day_numbers)):
+            date_column = tk.Frame(date_frame, bg=self.theme.bg_color)
+            date_column.grid(row=0, column=i+1, padx=2)
+            
+            # Weekday
+            tk.Label(
+                date_column,
+                text=weekday,
+                font=self.theme.small_font,
+                bg=self.theme.bg_color,
+                fg=self.theme.text_color,
+            ).pack()
+            
+            # Day number - highlight today
+            is_today = day_num == today.day
+            day_color = "#FF5722" if is_today else self.theme.text_color
+            day_bg = self.theme.bg_color
+            
+            tk.Label(
+                date_column,
+                text=str(day_num),
+                font=self.theme.small_font,
+                bg=day_bg,
+                fg=day_color,
+                width=2,
+            ).pack()
+        
+        # Create scrollable frame for habits
+        canvas = tk.Canvas(weekly_frame, bg=self.theme.bg_color, highlightthickness=0)
+        scrollbar = ttk.Scrollbar(weekly_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg=self.theme.bg_color)
+        
+        scrollable_frame.bind(
+            "<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        canvas.pack(side="left", fill="both", expand=True, padx=5, pady=5)
+        scrollbar.pack(side="right", fill="y")
+        
+        # Show habit rows with completion status
+        active_habits = [h for h in all_habits if h.get("active", True)]
+        
+        if not active_habits:
+            tk.Label(
+                scrollable_frame,
+                text="No active habits to display.",
+                font=self.theme.small_font,
+                bg=self.theme.bg_color,
+                fg=self.theme.text_color,
+                pady=10,
+            ).pack()
+        else:
+            # Display each habit's completion status for the past week
+            for i, habit in enumerate(active_habits):
+                # Row background alternates for better readability
+                row_bg = self.theme.bg_color if i % 2 == 0 else self.theme.darken_color(self.theme.bg_color)
+                
+                row_frame = tk.Frame(scrollable_frame, bg=row_bg)
+                row_frame.pack(fill=tk.X)
+                
+                # Habit name with icon
+                habit_label = tk.Label(
+                    row_frame,
+                    text=f"{habit.get('icon', '📋')} {habit['name']}",
+                    font=self.theme.small_font,
+                    bg=row_bg,
+                    fg=self.theme.text_color,
+                    width=15,
+                    anchor="w",
+                )
+                habit_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
+                
+                # Show completion status for each day
+                for j, date in enumerate(past_dates):
+                    completed = date in habit.get("completed_dates", [])
+                    
+                    if completed:
+                        status_color = "#4CAF50"  # Green for completed
+                        status_text = "✓"
+                    else:
+                        status_color = self.theme.darken_color(self.theme.primary_color)
+                        status_text = "·"
+                        
+                    # Create a small box to represent completion
+                    tk.Label(
+                        row_frame,
+                        text=status_text,
+                        font=("TkDefaultFont", 16),
+                        bg=row_bg,
+                        fg=status_color,
+                        width=2,
+                    ).grid(row=0, column=j+1, padx=5, pady=5)
+                
+                # Show streak
+                streak = habit.get("streak", 0)
+                streak_color = "#FF5722" if streak > 0 else self.theme.text_color
+                
+                tk.Label(
+                    row_frame,
+                    text=f"{streak}🔥",
+                    font=self.theme.small_font,
+                    bg=row_bg,
+                    fg=streak_color,
+                ).grid(row=0, column=8, padx=5, pady=5)
+        
+        # Check-ins section
+        checkins_frame = tk.LabelFrame(
+            parent,
+            text="Recent Check-ins",
+            font=self.theme.pixel_font,
+            bg=self.theme.bg_color,
+            fg="#673AB7",
+            padx=10,
+            pady=10,
+            relief=tk.RIDGE,
+            bd=3,
+        )
+        checkins_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # Collect all check-in events
+        all_checkins = []
+        
+        for check_in in check_ins:
+            for date in check_in.get("dates", []):
+                all_checkins.append({
+                    "name": check_in["name"],
+                    "icon": check_in.get("icon", "🩺"),
+                    "date": date,
+                    "notes": check_in.get("notes", {}).get(date, "")
+                })
+        
+        # Sort by date (most recent first)
+        all_checkins.sort(key=lambda x: x["date"], reverse=True)
+        
+        if not all_checkins:
+            tk.Label(
+                checkins_frame,
+                text="No check-ins recorded yet.",
+                font=self.theme.small_font,
+                bg=self.theme.bg_color,
+                fg=self.theme.text_color,
+                pady=10,
+            ).pack()
+        else:
+            # Create scrollable frame for check-ins
+            canvas = tk.Canvas(checkins_frame, bg=self.theme.bg_color, highlightthickness=0)
+            scrollbar = ttk.Scrollbar(checkins_frame, orient="vertical", command=canvas.yview)
+            scrollable_frame = tk.Frame(canvas, bg=self.theme.bg_color)
+            
+            scrollable_frame.bind(
+                "<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+            )
+            
+            canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+            canvas.configure(yscrollcommand=scrollbar.set)
+            
+            canvas.pack(side="left", fill="both", expand=True, padx=5, pady=5)
+            scrollbar.pack(side="right", fill="y")
+            
+            # Show up to 10 most recent check-ins
+            max_to_show = min(10, len(all_checkins))
+            
+            for i in range(max_to_show):
+                checkin = all_checkins[i]
+                
+                # Row background alternates for better readability
+                row_bg = self.theme.bg_color if i % 2 == 0 else self.theme.darken_color(self.theme.bg_color)
+                
+                # Check-in row
+                row_frame = tk.Frame(scrollable_frame, bg=row_bg, relief=tk.RIDGE, bd=1)
+                row_frame.pack(fill=tk.X, pady=3, padx=5)
+                
+                # Header with name and date
+                header_frame = tk.Frame(row_frame, bg=row_bg)
+                header_frame.pack(fill=tk.X, padx=5, pady=3)
+                
+                # Icon and name
+                name_label = tk.Label(
+                    header_frame,
+                    text=f"{checkin['icon']} {checkin['name']}",
+                    font=self.theme.small_font,
+                    bg=row_bg,
+                    fg="#673AB7",
+                    anchor="w",
+                )
+                name_label.pack(side=tk.LEFT)
+                
+                # Date
+                date_label = tk.Label(
+                    header_frame,
+                    text=checkin["date"],
+                    font=self.theme.small_font,
+                    bg=row_bg,
+                    fg=self.theme.text_color,
+                )
+                date_label.pack(side=tk.RIGHT)
+                
+                # Notes if any
+                if checkin["notes"]:
+                    notes_frame = tk.Frame(row_frame, bg=row_bg, pady=3)
+                    notes_frame.pack(fill=tk.X, padx=5)
+                    
+                    notes_text = tk.Text(
+                        notes_frame,
+                        height=2,
+                        width=40,
+                        font=self.theme.small_font,
+                        bg=self.theme.primary_color,
+                        fg=self.theme.text_color,
+                        wrap=tk.WORD,
+                    )
+                    notes_text.insert(tk.END, checkin["notes"])
+                    notes_text.config(state=tk.DISABLED)
+                    notes_text.pack(fill=tk.X)
 
     def create_art_activity_breakdown(self, parent):
         """
