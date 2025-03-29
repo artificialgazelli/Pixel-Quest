@@ -133,7 +133,7 @@
                 "Gender and agreement",
                 "Basic adjectives and placement",
                 "Question formation",
-                "Past tense - passé composé",
+                "Past tense - pass\u00c3\u00a9 compos\u00c3\u00a9",
                 "Past tense - imparfait",
                 "Future tense - simple",
                 "Prepositions of place",
@@ -321,6 +321,103 @@
             "Annual subscription to learning platform",
             "Weekend creative retreat",
             "Professional drawing tablet"
+        ]
+    },
+    "habits": {
+        "daily_habits": [
+            {
+                "name": "Early wakeup",
+                "icon": "\u2600\ufe0f",
+                "active": true,
+                "frequency": "daily",
+                "streak": 0,
+                "completed_dates": [
+                    "2025-03-24",
+                    "2025-03-25"
+                ],
+                "category": "Personal"
+            },
+            {
+                "name": "Exercise",
+                "icon": "\ud83c\udfc3",
+                "active": true,
+                "frequency": "daily",
+                "streak": 0,
+                "completed_dates": [],
+                "category": "Personal"
+            },
+            {
+                "name": "Reading",
+                "icon": "\ud83d\udcda",
+                "active": true,
+                "frequency": "daily",
+                "streak": 0,
+                "completed_dates": [],
+                "category": "Personal"
+            },
+            {
+                "name": "Meditation",
+                "icon": "\ud83e\uddd8",
+                "active": true,
+                "frequency": "daily",
+                "streak": 0,
+                "completed_dates": [],
+                "category": "Personal"
+            },
+            {
+                "name": "Drink water",
+                "icon": "\ud83d\udca7",
+                "active": true,
+                "frequency": "daily",
+                "streak": 0,
+                "completed_dates": [],
+                "category": "Personal"
+            }
+        ],
+        "custom_habits": [
+            {
+                "name": "Go To Bed Early",
+                "icon": "\ud83d\udca4",
+                "category": "Health",
+                "frequency": "daily",
+                "active": true,
+                "streak": 0,
+                "completed_dates": []
+            }
+        ],
+        "check_ins": [
+            {
+                "name": "Doctor Appointments",
+                "icon": "\ud83e\ude7a",
+                "dates": [],
+                "notes": {},
+                "category": "Health"
+            },
+            {
+                "name": "Dentist",
+                "icon": "\ud83e\uddb7",
+                "dates": [],
+                "notes": {},
+                "category": "Health"
+            }
+        ],
+        "categories": [
+            {
+                "name": "Health",
+                "color": "#4CAF50"
+            },
+            {
+                "name": "Productivity",
+                "color": "#2196F3"
+            },
+            {
+                "name": "Learning",
+                "color": "#FF9800"
+            },
+            {
+                "name": "Personal",
+                "color": "#E91E63"
+            }
         ]
     }
 }
