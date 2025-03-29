@@ -182,7 +182,7 @@ class StatisticsModule:
                 text=f"Active Habits: {active_habits} | Longest Streak: {max_streak} days",
                 font=self.theme.pixel_font,
                 bg=self.theme.bg_color,
-                fg="#673AB7",  # Purple for habits
+                fg=self.theme.habit_color,  # Use the theme's habit color
             ).pack(anchor="w", pady=5)
 
         # Distribution frame
@@ -525,7 +525,7 @@ class StatisticsModule:
             "korean": self.theme.korean_color,
             "french": self.theme.french_color,
             "diss": self.theme.diss_color,
-            "habit": "#673AB7",  # Purple for habits
+            "habit": self.theme.habit_color,  # Use the theme's habit color
             "reward": "#E91E63",
         }
 
@@ -835,7 +835,7 @@ class StatisticsModule:
             text="Habits Summary",
             font=self.theme.pixel_font,
             bg=self.theme.bg_color,
-            fg="#673AB7",  # Purple for habit tracker
+            fg=self.theme.habit_color,  # Use the theme's habit color
             padx=10,
             pady=10,
             relief=tk.RIDGE,
@@ -882,7 +882,7 @@ class StatisticsModule:
             text=str(total_habits),
             font=self.theme.heading_font,
             bg=self.theme.bg_color,
-            fg="#673AB7",
+            fg=self.theme.habit_color,  # Use the theme's habit color
         ).pack()
         
         # Active habits
@@ -953,7 +953,7 @@ class StatisticsModule:
             text="Weekly Habit Completion",
             font=self.theme.pixel_font,
             bg=self.theme.bg_color,
-            fg="#673AB7",
+            fg=self.theme.habit_color,  # Use the theme's habit color
             padx=10,
             pady=10,
             relief=tk.RIDGE,
@@ -1096,7 +1096,7 @@ class StatisticsModule:
             text="Recent Check-ins",
             font=self.theme.pixel_font,
             bg=self.theme.bg_color,
-            fg="#673AB7",
+            fg=self.theme.habit_color,  # Use the theme's habit color
             padx=10,
             pady=10,
             relief=tk.RIDGE,
@@ -1167,7 +1167,7 @@ class StatisticsModule:
                     text=f"{checkin['icon']} {checkin['name']}",
                     font=self.theme.small_font,
                     bg=row_bg,
-                    fg="#673AB7",
+                    fg=self.theme.habit_color,  # Use the theme's habit color
                     anchor="w",
                 )
                 name_label.pack(side=tk.LEFT)
