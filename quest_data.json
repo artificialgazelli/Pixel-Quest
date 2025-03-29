@@ -133,7 +133,7 @@
                 "Gender and agreement",
                 "Basic adjectives and placement",
                 "Question formation",
-                "Past tense - pass\u00e9 compos\u00e9",
+                "Past tense - passé composé",
                 "Past tense - imparfait",
                 "Future tense - simple",
                 "Prepositions of place",
@@ -166,6 +166,120 @@
                 "Write short story in French",
                 "Text chat with French speaker",
                 "Teach someone basic French phrases"
+            ]
+        }
+    },
+    "diss": {
+        "points": 0,
+        "level": 1,
+        "streak": 0,
+        "last_practice": null,
+        "tasks": {
+            "preparation": [
+                {
+                    "name": "Literature review",
+                    "start_date": "27.03.2025",
+                    "end_date": "31.08.2025",
+                    "total_hours": 100,
+                    "hours_worked": 0
+                },
+                {
+                    "name": "Methodology development",
+                    "start_date": "15.04.2025",
+                    "end_date": "31.07.2025",
+                    "total_hours": 80,
+                    "hours_worked": 0
+                },
+                {
+                    "name": "Data collection and processing",
+                    "start_date": "01.05.2025",
+                    "end_date": "31.07.2025",
+                    "total_hours": 120,
+                    "hours_worked": 0
+                },
+                {
+                    "name": "Writing theoretical chapter",
+                    "start_date": "01.06.2025",
+                    "end_date": "15.10.2025",
+                    "total_hours": 150,
+                    "hours_worked": 0
+                }
+            ],
+            "empirical": [
+                {
+                    "name": "Qualitative discourse analysis",
+                    "start_date": "01.08.2025",
+                    "end_date": "15.01.2026",
+                    "total_hours": 200,
+                    "hours_worked": 0
+                },
+                {
+                    "name": "Writing results",
+                    "start_date": "16.01.2026",
+                    "end_date": "31.03.2026",
+                    "total_hours": 100,
+                    "hours_worked": 0
+                },
+                {
+                    "name": "Topic modeling",
+                    "start_date": "16.01.2026",
+                    "end_date": "31.05.2026",
+                    "total_hours": 150,
+                    "hours_worked": 0
+                },
+                {
+                    "name": "Writing results",
+                    "start_date": "01.06.2026",
+                    "end_date": "31.08.2026",
+                    "total_hours": 100,
+                    "hours_worked": 0
+                }
+            ],
+            "integration": [
+                {
+                    "name": "Finalizing methodology chapter",
+                    "start_date": "01.06.2026",
+                    "end_date": "15.09.2026",
+                    "total_hours": 80,
+                    "hours_worked": 0
+                },
+                {
+                    "name": "Writing discussion and conclusion",
+                    "start_date": "01.09.2026",
+                    "end_date": "15.01.2027",
+                    "total_hours": 120,
+                    "hours_worked": 0
+                },
+                {
+                    "name": "Revising introduction",
+                    "start_date": "16.01.2027",
+                    "end_date": "28.02.2027",
+                    "total_hours": 60,
+                    "hours_worked": 0
+                }
+            ],
+            "finalization": [
+                {
+                    "name": "Proofreading and revision",
+                    "start_date": "01.03.2027",
+                    "end_date": "15.06.2027",
+                    "total_hours": 100,
+                    "hours_worked": 0
+                },
+                {
+                    "name": "Layout and formatting",
+                    "start_date": "16.06.2027",
+                    "end_date": "15.08.2027",
+                    "total_hours": 60,
+                    "hours_worked": 0
+                },
+                {
+                    "name": "Corrections and printing",
+                    "start_date": "16.08.2027",
+                    "end_date": "31.10.2027",
+                    "total_hours": 40,
+                    "hours_worked": 0
+                }
             ]
         }
     },
