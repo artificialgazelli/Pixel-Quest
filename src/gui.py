@@ -15,6 +15,7 @@ from src.modules.statistics import StatisticsModule
 from src.modules.settings import SettingsModule
 from src.modules.rewards import RewardsModule
 from src.modules.habit_tracker import HabitTracker
+from src.modules.todo_list import TodoList
 
 
 class QuestGame:
@@ -62,6 +63,7 @@ class QuestGame:
         self.settings_module = SettingsModule(self, self.data_manager, self.theme)
         self.rewards_module = RewardsModule(self, self.data_manager, self.theme)
         self.habit_tracker = HabitTracker(self, self.data_manager, self.theme)
+        self.todo_list = TodoList(self, self.data_manager, self.theme)
 
     def clear_frame(self):
         """Clear all widgets from the main frame."""
@@ -365,6 +367,60 @@ class QuestGame:
             color=self.theme.habit_color,  # Use theme color
         )
         habit_button.pack(pady=5)
+        
+        # To Do List
+        todo_frame = tk.Frame(parent, bg=self.theme.bg_color, relief=tk.RIDGE, bd=3)
+        todo_frame.pack(pady=10, fill=tk.X)
+
+        todo_label = tk.Label(
+            todo_frame,
+            text="To Do List",
+            font=self.theme.pixel_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.todo_color,  # Use theme color
+        )
+        todo_label.pack(pady=5)
+
+        # Get task statistics
+        tasks = self.data.get("todo", {}).get("tasks", [])
+        active_tasks = [t for t in tasks if t.get("status") == "active"]
+        total_tasks = len(active_tasks)
+        
+        # Count overdue tasks
+        today = datetime.now().date()
+        overdue_tasks = sum(
+            1 for t in active_tasks if t.get("due_date") and 
+            datetime.strptime(t.get("due_date"), "%Y-%m-%d").date() < today
+        )
+        
+        # Count tasks due today
+        due_today = sum(
+            1 for t in active_tasks if t.get("due_date") and 
+            datetime.strptime(t.get("due_date"), "%Y-%m-%d").date() == today
+        )
+        
+        # Display task status
+        task_status_text = f"Active tasks: {total_tasks} | Due today: {due_today}"
+        if overdue_tasks > 0:
+            task_status_text += f" | Overdue: {overdue_tasks}"
+        
+        task_status_label = tk.Label(
+            todo_frame,
+            text=task_status_text,
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg="#F44336" if overdue_tasks > 0 else self.theme.text_color,
+        )
+        task_status_label.pack(pady=5)
+
+        # Open To Do List button
+        todo_button = self.theme.create_pixel_button(
+            todo_frame,
+            "Open To Do List",
+            lambda: self.show_module("todo"),
+            color=self.theme.todo_color,  # Use theme color
+        )
+        todo_button.pack(pady=5)
 
         # Rewards
         rewards_button = self.theme.create_pixel_button(
@@ -377,7 +433,7 @@ class QuestGame:
         Show the selected module interface.
 
         Args:
-            module_name: Name of the module to show ('art', 'korean', 'french', 'diss', or 'habits')
+            module_name: Name of the module to show ('art', 'korean', 'french', 'diss', 'habits', or 'todo')
         """
         self.clear_frame()
 
@@ -388,6 +444,7 @@ class QuestGame:
             "french": self.french_module,
             "diss": self.diss_module,
             "habits": self.habit_tracker,
+            "todo": self.todo_list,
         }
 
         # Display the selected module
