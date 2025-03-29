@@ -234,10 +234,11 @@ class CheckInTab:
         widths = [15, 15, 15, 10, 10, 15]
 
         for i, header in enumerate(headers):
+            # Create bold header - don't try to access small_font as tuple
             header_label = tk.Label(
                 header_frame,
                 text=header,
-                font=(self.theme.small_font[0], self.theme.small_font[1], "bold"),
+                font=("TkDefaultFont", 10, "bold"),  # Use direct font specification
                 bg=self.theme.bg_color,
                 fg="#E91E63",
                 width=widths[i],
@@ -355,7 +356,7 @@ class CheckInTab:
             status_label = tk.Label(
                 row_frame,
                 text=status,
-                font=(self.theme.small_font[0], self.theme.small_font[1], "bold"),
+                font=("TkDefaultFont", 10, "bold"),  # Use direct font specification
                 bg=row_frame["bg"],
                 fg=status_color,
                 width=widths[4],
@@ -370,7 +371,7 @@ class CheckInTab:
             update_button = tk.Button(
                 actions_frame,
                 text="Update",
-                font=(self.theme.small_font[0], self.theme.small_font[1] - 1),
+                font=("TkDefaultFont", 9),  # Use direct font specification
                 bg=self.theme.primary_color,
                 fg=self.theme.text_color,
                 relief=tk.FLAT,
@@ -383,7 +384,7 @@ class CheckInTab:
                 schedule_button = tk.Button(
                     actions_frame,
                     text="Schedule",
-                    font=(self.theme.small_font[0], self.theme.small_font[1] - 1),
+                    font=("TkDefaultFont", 9),  # Use direct font specification
                     bg="#4CAF50",  # Green for schedule
                     fg="white",
                     relief=tk.FLAT,
@@ -780,6 +781,86 @@ class CheckInTab:
         )
         save_button.pack(side=tk.LEFT, padx=10)
 
+    def save_doctor_appointment(
+        self, subcategory, last_date_str, next_date_str, interval_str, dialog
+    ):
+        """
+        Save updates to a doctor appointment subcategory.
+
+        Args:
+            subcategory: Subcategory object
+            last_date_str: Last visit date as string
+            next_date_str: Next appointment date as string
+            interval_str: Interval in months as string
+            dialog: Dialog window to close after saving
+        """
+        # Validate dates
+        try:
+            last_date = datetime.strptime(last_date_str, "%Y-%m-%d").date()
+        except ValueError:
+            messagebox.showerror(
+                "Error", "Invalid last visit date format. Use YYYY-MM-DD."
+            )
+            return
+
+        try:
+            next_date = datetime.strptime(next_date_str, "%Y-%m-%d").date()
+        except ValueError:
+            messagebox.showerror(
+                "Error", "Invalid next appointment date format. Use YYYY-MM-DD."
+            )
+            return
+
+        try:
+            interval = int(interval_str)
+            if interval <= 0:
+                raise ValueError("Interval must be positive")
+        except ValueError:
+            messagebox.showerror("Error", "Interval must be a positive number.")
+            return
+
+        # Update subcategory
+        subcategory["last_date"] = last_date_str
+        subcategory["next_date"] = next_date_str
+        subcategory["interval_months"] = interval
+
+        # Find doctor appointments check-in
+        for check_in in self.data.get("habits", {}).get("check_ins", []):
+            if check_in["name"] == "Doctor Appointments":
+                # Make sure the last_date is in the dates list
+                if last_date_str not in check_in.get("dates", []):
+                    check_in["dates"].append(last_date_str)
+                break
+
+        # Save data
+        self.data_manager.save_data()
+
+        # Close dialog
+        dialog.destroy()
+
+        # Refresh display
+        self.refresh_display()
+
+        # Show confirmation
+        messagebox.showinfo(
+            "Success",
+            f"{subcategory['name']} appointment updated successfully.\nNext appointment: {next_date_str}",
+        )
+
+    def refresh_display(self):
+        """Refresh the check-in tab display."""
+        # Clear and rebuild UI elements
+        if self.appointments_frame:
+            parent = self.appointments_frame.master
+            for widget in parent.winfo_children():
+                widget.destroy()
+
+            # Call create_check_ins_view again to rebuild everything
+            self.create_check_ins_view(parent)
+        else:
+            # If the frame doesn't exist yet, let the habit tracker refresh it
+            self.habit_tracker.refresh_display()
+
         # Set focus
         date_entry.focus_set()
 
@@ -946,22 +1027,29 @@ class CheckInTab:
     def update_calendar_view(self):
         """Update the calendar view with the selected month."""
         # Update month label
-        self.month_label.config(
-            text=f"{calendar.month_name[self.selected_month]} {self.selected_year}"
-        )
+        if self.month_label:
+            self.month_label.config(
+                text=f"{calendar.month_name[self.selected_month]} {self.selected_year}"
+            )
 
-        # Clear calendar grid
-        for widget in self.month_frame.winfo_children():
-            widget.destroy()
+        # Clear calendar grid if it exists
+        if self.month_frame:
+            for widget in self.month_frame.winfo_children():
+                widget.destroy()
 
-        # Display the month
-        self.display_month()
+            # Display the month
+            self.display_month()
 
-        # Update check-ins list
-        self.display_check_ins()
+        # Update check-ins list if it exists
+        if self.events_list_frame:
+            self.display_check_ins()
 
     def display_month(self):
         """Display the selected month in the calendar grid."""
+        # Check if month_frame exists
+        if not self.month_frame:
+            return
+
         # Get calendar for selected month
         cal = calendar.monthcalendar(self.selected_year, self.selected_month)
 
@@ -1136,6 +1224,10 @@ class CheckInTab:
         Args:
             date_str: Date string in YYYY-MM-DD format
         """
+        # Check if events_list_frame exists
+        if not self.events_list_frame:
+            return
+
         # Clear the events list frame
         for widget in self.events_list_frame.winfo_children():
             widget.destroy()
@@ -1262,6 +1354,7 @@ class CheckInTab:
                             )
                             subcat_frame.pack(fill=tk.X, pady=2)
 
+                            # Fix: Use a properly formed bold font tuple
                             subcat_label = tk.Label(
                                 subcat_frame,
                                 text=f"Type: {subcat['name']}",
@@ -1587,6 +1680,10 @@ class CheckInTab:
 
     def display_check_ins(self):
         """Display check-ins for the selected month."""
+        # Check if events_list_frame exists
+        if not self.events_list_frame:
+            return
+
         # Clear the events list frame
         for widget in self.events_list_frame.winfo_children():
             widget.destroy()
@@ -1734,11 +1831,7 @@ class CheckInTab:
                                 appt_label = tk.Label(
                                     date_frame,
                                     text=f"📅 {subcat['name']} appointment",
-                                    font=(
-                                        self.theme.small_font[0],
-                                        self.theme.small_font[1],
-                                        "bold",
-                                    ),
+                                    font=("TkDefaultFont", 10, "bold"),
                                     bg=date_frame["bg"],
                                     fg="#E91E63",  # Pink for appointments
                                     anchor="w",
@@ -1926,13 +2019,31 @@ class CheckInTab:
             messagebox.showerror("Error", "Please enter a check-in name.")
             return
 
-        # Check if check-in name already exists
+        # Check if check-in name already exists as a top-level check-in
         for check_in in self.data["habits"].get("check_ins", []):
             if check_in["name"] == name:
                 messagebox.showerror(
                     "Error", f"A check-in named '{name}' already exists."
                 )
                 return
+
+        # Also check if this name exists as a specialist subcategory under Doctor Appointments
+        for check_in in self.data["habits"].get("check_ins", []):
+            if (
+                check_in["name"] == "Doctor Appointments"
+                and "subcategories" in check_in
+            ):
+                for subcat in check_in.get("subcategories", []):
+                    if subcat["name"] == name:
+                        # Ask if they want to add as a different check-in type or manage as a specialist
+                        response = messagebox.askyesno(
+                            "Name Conflict",
+                            f"'{name}' already exists as a specialist under Doctor Appointments.\n\n"
+                            f"Do you want to create a separate check-in type with this name anyway?",
+                            icon="warning",
+                        )
+                        if not response:
+                            return
 
         # Create new check-in
         new_check_in = {
@@ -2399,47 +2510,6 @@ class CheckInTab:
             fg=self.theme.text_color,
         ).pack(side=tk.LEFT, padx=5)
 
-        # Next appointment date
-        next_date_frame = tk.Frame(dialog, bg=self.theme.bg_color)
-        next_date_frame.pack(fill=tk.X, padx=20, pady=10)
-
-        tk.Label(
-            next_date_frame,
-            text="Next Appointment Date:",
-            font=self.theme.small_font,
-            bg=self.theme.bg_color,
-            fg=self.theme.text_color,
-        ).pack(anchor="w")
-
-        # Get existing next date
-        try:
-            next_date = datetime.strptime(
-                subcategory.get("next_date", ""), "%Y-%m-%d"
-            ).date()
-        except:
-            next_date = last_date + timedelta(days=180)  # Default to 6 months
-
-        # Date entry with calendar picker
-        next_date_var = tk.StringVar(value=next_date.strftime("%Y-%m-%d"))
-
-        next_date_entry = tk.Entry(
-            next_date_frame,
-            textvariable=next_date_var,
-            font=self.theme.small_font,
-            bg=self.theme.primary_color,
-            fg=self.theme.text_color,
-            width=15,
-        )
-        next_date_entry.pack(side=tk.LEFT, padx=5, pady=5)
-
-        tk.Label(
-            next_date_frame,
-            text="(YYYY-MM-DD)",
-            font=("TkDefaultFont", 8),
-            bg=self.theme.bg_color,
-            fg=self.theme.text_color,
-        ).pack(side=tk.LEFT, padx=5)
-
         # Interval in months
         interval_frame = tk.Frame(dialog, bg=self.theme.bg_color)
         interval_frame.pack(fill=tk.X, padx=20, pady=10)
@@ -2499,82 +2569,43 @@ class CheckInTab:
         )
         save_button.pack(side=tk.LEFT, padx=10)
 
-    def save_doctor_appointment(
-        self, subcategory, last_date_str, next_date_str, interval_str, dialog
-    ):
-        """
-        Save updates to a doctor appointment subcategory.
+        # Next appointment date
+        next_date_frame = tk.Frame(dialog, bg=self.theme.bg_color)
+        next_date_frame.pack(fill=tk.X, padx=20, pady=10)
 
-        Args:
-            subcategory: Subcategory object
-            last_date_str: Last visit date as string
-            next_date_str: Next appointment date as string
-            interval_str: Interval in months as string
-            dialog: Dialog window to close after saving
-        """
-        # Validate dates
+        tk.Label(
+            next_date_frame,
+            text="Next Appointment Date:",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+        ).pack(anchor="w")
+
+        # Get existing next date
         try:
-            last_date = datetime.strptime(last_date_str, "%Y-%m-%d").date()
-        except ValueError:
-            messagebox.showerror(
-                "Error", "Invalid last visit date format. Use YYYY-MM-DD."
-            )
-            return
+            next_date = datetime.strptime(
+                subcategory.get("next_date", ""), "%Y-%m-%d"
+            ).date()
+        except:
+            next_date = last_date + timedelta(days=180)  # Default to 6 months
 
-        try:
-            next_date = datetime.strptime(next_date_str, "%Y-%m-%d").date()
-        except ValueError:
-            messagebox.showerror(
-                "Error", "Invalid next appointment date format. Use YYYY-MM-DD."
-            )
-            return
+        # Date entry with calendar picker
+        next_date_var = tk.StringVar(value=next_date.strftime("%Y-%m-%d"))
 
-        try:
-            interval = int(interval_str)
-            if interval <= 0:
-                raise ValueError("Interval must be positive")
-        except ValueError:
-            messagebox.showerror("Error", "Interval must be a positive number.")
-            return
-
-        # Update subcategory
-        subcategory["last_date"] = last_date_str
-        subcategory["next_date"] = next_date_str
-        subcategory["interval_months"] = interval
-
-        # Find doctor appointments check-in
-        for check_in in self.data.get("habits", {}).get("check_ins", []):
-            if check_in["name"] == "Doctor Appointments":
-                # Make sure the last_date is in the dates list
-                if last_date_str not in check_in.get("dates", []):
-                    check_in["dates"].append(last_date_str)
-                break
-
-        # Save data
-        self.data_manager.save_data()
-
-        # Close dialog
-        dialog.destroy()
-
-        # Refresh display
-        self.refresh_display()
-
-        # Show confirmation
-        messagebox.showinfo(
-            "Success",
-            f"{subcategory['name']} appointment updated successfully.\nNext appointment: {next_date_str}",
+        next_date_entry = tk.Entry(
+            next_date_frame,
+            textvariable=next_date_var,
+            font=self.theme.small_font,
+            bg=self.theme.primary_color,
+            fg=self.theme.text_color,
+            width=15,
         )
+        next_date_entry.pack(side=tk.LEFT, padx=5, pady=5)
 
-    def refresh_display(self):
-        """Refresh the check-in tab display."""
-        # Clear and rebuild UI elements
-        if self.appointments_frame:
-            parent = self.appointments_frame.master
-            for widget in parent.winfo_children():
-                widget.destroy()
-
-            # Call create_check_ins_view again to rebuild everything
-            self.create_check_ins_view(parent)
-        else:
-            # If the frame doesn't exist yet, let the habit tracker refresh it
-            self.habit_tracker.refresh_display()
+        tk.Label(
+            next_date_frame,
+            text="(YYYY-MM-DD)",
+            font=("TkDefaultFont", 8),
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+        ).pack(side=tk.LEFT, padx=5)

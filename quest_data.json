@@ -342,6 +342,15 @@
                 "streak": 0,
                 "completed_dates": [],
                 "category": "Personal"
+            },
+            {
+                "name": "Go to bed early",
+                "icon": "\ud83d\udca4",
+                "active": true,
+                "category": "Health",
+                "frequency": "daily",
+                "streak": 0,
+                "completed_dates": []
             }
         ],
         "custom_habits": [
