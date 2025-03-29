@@ -16,6 +16,7 @@ from src.modules.settings import SettingsModule
 from src.modules.rewards import RewardsModule
 from src.modules.habit_tracker import HabitTracker
 from src.modules.todo_list import TodoList
+from src.modules.pomodoro_module import PomodoroModule
 
 
 class QuestGame:
@@ -64,11 +65,35 @@ class QuestGame:
         self.rewards_module = RewardsModule(self, self.data_manager, self.theme)
         self.habit_tracker = HabitTracker(self, self.data_manager, self.theme)
         self.todo_list = TodoList(self, self.data_manager, self.theme)
+        self.pomodoro_module = PomodoroModule(self, self.data_manager, self.theme)
 
     def clear_frame(self):
         """Clear all widgets from the main frame."""
         for widget in self.main_frame.winfo_children():
             widget.destroy()
+
+    def show_module(self, module_name):
+        """
+        Show the selected module interface.
+
+        Args:
+            module_name: Name of the module to show ('art', 'korean', 'french', 'diss', 'habits', or 'todo')
+        """
+        self.clear_frame()
+
+        # Map module names to their corresponding modules
+        modules = {
+            "art": self.art_module,
+            "korean": self.korean_module,
+            "french": self.french_module,
+            "diss": self.diss_module,
+            "habits": self.habit_tracker,
+            "todo": self.todo_list,
+        }
+
+        # Display the selected module
+        if module_name in modules:
+            modules[module_name].show_module(self.main_frame)
 
     def show_main_menu(self):
         """Display the main menu with options for each module."""
@@ -101,11 +126,13 @@ class QuestGame:
         # Create tabs
         modules_tab = tk.Frame(tab_control, bg=self.theme.bg_color)
         rewards_tab = tk.Frame(tab_control, bg=self.theme.bg_color)
+        pomodoro_tab = tk.Frame(tab_control, bg=self.theme.bg_color)
         stats_tab = tk.Frame(tab_control, bg=self.theme.bg_color)
         settings_tab = tk.Frame(tab_control, bg=self.theme.bg_color)
 
         tab_control.add(modules_tab, text="Modules")
         tab_control.add(rewards_tab, text="Rewards")
+        tab_control.add(pomodoro_tab, text="Pomodoro")
         tab_control.add(stats_tab, text="Statistics")
         tab_control.add(settings_tab, text="Settings")
 
@@ -114,6 +141,9 @@ class QuestGame:
 
         # === REWARDS TAB ===
         self.rewards_module.create_rewards_tab(rewards_tab)
+
+        # === POMODORO TAB ===
+        self.pomodoro_module.create_pomodoro_tab(pomodoro_tab)
 
         # === STATISTICS TAB ===
         self.statistics_module.create_statistics_tab(stats_tab)
