@@ -4,6 +4,7 @@ Main GUI components for the Pixel Quest application.
 
 import tkinter as tk
 from tkinter import ttk
+from datetime import datetime
 from src.theme import PixelTheme
 from src.data_manager import DataManager
 from src.modules.art_module import ArtModule
@@ -343,7 +344,18 @@ class QuestGame:
         )
         progress_bg.pack(fill=tk.X)
         
-        progress_width = int((completion_pct / 100) * progress_bg.winfo_reqwidth())
+        # Use a fixed width for the progress bar to avoid the issue with winfo_reqwidth returning 1
+        total_width = 300
+        progress_width = int((completion_pct / 100) * total_width)
+        
+        progress_bg = tk.Frame(
+            progress_frame,
+            bg=self.theme.darken_color(self.theme.primary_color),
+            height=10,
+            width=total_width,
+        )
+        progress_bg.pack(pady=5)
+        
         progress_bar = tk.Frame(
             progress_bg,
             bg=status_color,
