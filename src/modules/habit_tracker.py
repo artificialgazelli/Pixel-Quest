@@ -11,10 +11,10 @@ from datetime import datetime, timedelta
 import calendar
 
 # Import tab modules with correct relative imports
-from habit_tab import HabitTab
-from check_in_tab import CheckInTab
-from stats_tab import StatsTab
-from categories_tab import CategoriesTab
+from src.modules.habit_tab import HabitTab
+from src.modules.check_in_tab import CheckInTab
+from src.modules.stats_tab import StatsTab
+from src.modules.categories_tab import CategoriesTab
 
 
 class HabitTracker:

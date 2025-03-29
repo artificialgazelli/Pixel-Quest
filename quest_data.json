@@ -326,18 +326,6 @@
     "habits": {
         "daily_habits": [
             {
-                "name": "Early wakeup",
-                "icon": "\u2600\ufe0f",
-                "active": true,
-                "frequency": "daily",
-                "streak": 0,
-                "completed_dates": [
-                    "2025-03-24",
-                    "2025-03-25"
-                ],
-                "category": "Personal"
-            },
-            {
                 "name": "Exercise",
                 "icon": "\ud83c\udfc3",
                 "active": true,
@@ -354,29 +342,82 @@
                 "streak": 0,
                 "completed_dates": [],
                 "category": "Personal"
-            },
-            {
-                "name": "Meditation",
-                "icon": "\ud83e\uddd8",
-                "active": true,
-                "frequency": "daily",
-                "streak": 0,
-                "completed_dates": [],
-                "category": "Personal"
-            },
-            {
-                "name": "Drink water",
-                "icon": "\ud83d\udca7",
-                "active": true,
-                "frequency": "daily",
-                "streak": 0,
-                "completed_dates": [],
-                "category": "Personal"
             }
         ],
         "custom_habits": [
             {
                 "name": "Go To Bed Early",
+                "icon": "\ud83d\udca4",
+                "category": "Health",
+                "frequency": "daily",
+                "active": true,
+                "streak": 0,
+                "completed_dates": []
+            },
+            {
+                "name": "Learn Korean",
+                "icon": "\ud83c\uddf0\ud83c\uddf7",
+                "active": true,
+                "category": "Learning",
+                "frequency": "interval",
+                "interval": 2,
+                "streak": 0,
+                "completed_dates": []
+            },
+            {
+                "name": "Learn French",
+                "icon": "\ud83c\uddeb\ud83c\uddf7",
+                "active": true,
+                "category": "Learning",
+                "frequency": "interval",
+                "interval": 2,
+                "streak": 0,
+                "completed_dates": []
+            },
+            {
+                "name": "Clean",
+                "icon": "\ud83e\uddf9",
+                "active": true,
+                "category": "Personal",
+                "frequency": "weekly",
+                "specific_days": [
+                    6
+                ],
+                "streak": 0,
+                "completed_dates": []
+            },
+            {
+                "name": "Do Laundry",
+                "icon": "\ud83e\uddfa",
+                "active": true,
+                "category": "Personal",
+                "frequency": "interval",
+                "interval": 5,
+                "streak": 0,
+                "completed_dates": []
+            },
+            {
+                "name": "Water Plants",
+                "icon": "\ud83c\udf31",
+                "active": true,
+                "category": "Personal",
+                "frequency": "interval",
+                "interval": 10,
+                "streak": 0,
+                "completed_dates": []
+            },
+            {
+                "name": "Be Creative",
+                "icon": "\ud83c\udfa8",
+                "active": true,
+                "category": "Personal",
+                "frequency": "interval",
+                "interval": 2,
+                "streak": 0,
+                "completed_dates": []
+            },
+            {
+                "name": "Wake Up Early",
                 "icon": "\ud83d\udca4",
                 "category": "Health",
                 "frequency": "daily",
@@ -391,7 +432,33 @@
                 "icon": "\ud83e\ude7a",
                 "dates": [],
                 "notes": {},
-                "category": "Health"
+                "category": "Health",
+                "subcategories": [
+                    {
+                        "name": "Dermatologist",
+                        "last_date": "2025-03-31",
+                        "interval_months": 6,
+                        "next_date": "2025-09-30"
+                    },
+                    {
+                        "name": "Dentist",
+                        "last_date": "2025-03-31",
+                        "interval_months": 6,
+                        "next_date": "2025-09-30"
+                    },
+                    {
+                        "name": "Gynecologist",
+                        "last_date": "2025-04-07",
+                        "interval_months": 6,
+                        "next_date": "2025-10-07"
+                    },
+                    {
+                        "name": "GP",
+                        "last_date": "2025-04-09",
+                        "interval_months": 6,
+                        "next_date": "2025-10-09"
+                    }
+                ]
             },
             {
                 "name": "Dentist",
