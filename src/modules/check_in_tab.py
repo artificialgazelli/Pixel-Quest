@@ -40,6 +40,7 @@ class CheckInTab:
         self.month_label = None
         self.month_frame = None
         self.events_list_frame = None
+        self.appointments_frame = None
 
     def create_check_ins_view(self, parent):
         """
@@ -48,8 +49,36 @@ class CheckInTab:
         Args:
             parent: Parent frame to place the check-ins view
         """
+        # Main container with scrolling capability
+        main_container = tk.Frame(parent, bg=self.theme.bg_color)
+        main_container.pack(fill=tk.BOTH, expand=True)
+
+        # Canvas for scrolling
+        canvas = tk.Canvas(main_container, bg=self.theme.bg_color, highlightthickness=0)
+        scrollbar = ttk.Scrollbar(
+            main_container, orient="vertical", command=canvas.yview
+        )
+
+        # Scrollable frame inside canvas
+        scrollable_frame = tk.Frame(canvas, bg=self.theme.bg_color)
+        scrollable_frame.bind(
+            "<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        # Bind mouse wheel for scrolling
+        canvas.bind_all(
+            "<MouseWheel>",
+            lambda e: canvas.yview_scroll(int(-1 * (e.delta / 120)), "units"),
+        )
+
         # Control panel with month navigation
-        control_frame = tk.Frame(parent, bg=self.theme.bg_color)
+        control_frame = tk.Frame(scrollable_frame, bg=self.theme.bg_color)
         control_frame.pack(fill=tk.X, pady=5)
 
         # Previous month button
@@ -87,12 +116,15 @@ class CheckInTab:
             control_frame,
             "Add Check-in",
             self.add_new_check_in,
-            color=self.theme.habit_color,  # Use the theme's habit color
+            color=self.theme.habit_color,
         )
         add_checkin_button.pack(side=tk.RIGHT, padx=10)
 
+        # Top section: Appointment Overview
+        self.display_appointment_overview(scrollable_frame)
+
         # Calendar frame
-        calendar_frame = tk.Frame(parent, bg=self.theme.bg_color)
+        calendar_frame = tk.Frame(scrollable_frame, bg=self.theme.bg_color)
         calendar_frame.pack(fill=tk.BOTH, expand=True, pady=10)
 
         # Days of week header
@@ -119,11 +151,11 @@ class CheckInTab:
 
         # Events frame
         events_frame = tk.LabelFrame(
-            parent,
+            scrollable_frame,
             text="Check-in Details",
             font=self.theme.pixel_font,
             bg=self.theme.bg_color,
-            fg=self.theme.habit_color,  # Use the theme's habit color
+            fg=self.theme.habit_color,
             padx=10,
             pady=10,
         )
@@ -136,8 +168,760 @@ class CheckInTab:
         # Display check-ins for current month
         self.display_check_ins()
 
-        # Display upcoming appointments
-        self.display_upcoming_appointments(parent)
+    def display_appointment_overview(self, parent):
+        """Display a comprehensive appointment overview at the top of the tab"""
+        # Create frame for upcoming appointments
+        overview_frame = tk.LabelFrame(
+            parent,
+            text="Doctor Appointments Overview",
+            font=self.theme.pixel_font,
+            bg=self.theme.bg_color,
+            fg="#E91E63",  # Pink for medical
+            padx=10,
+            pady=10,
+        )
+        overview_frame.pack(fill=tk.X, pady=10, padx=10)
+
+        # Save reference to update later
+        self.appointments_frame = overview_frame
+
+        # Find doctor appointments check-in
+        doctor_appointments = None
+        for check_in in self.data.get("habits", {}).get("check_ins", []):
+            if check_in["name"] == "Doctor Appointments":
+                doctor_appointments = check_in
+                break
+
+        if not doctor_appointments or "subcategories" not in doctor_appointments:
+            self.initialize_doctor_appointments()
+            # Refresh after initialization
+            for check_in in self.data.get("habits", {}).get("check_ins", []):
+                if check_in["name"] == "Doctor Appointments":
+                    doctor_appointments = check_in
+                    break
+
+        if not doctor_appointments:
+            tk.Label(
+                overview_frame,
+                text="No doctor appointments found. Please add appointments first.",
+                font=self.theme.small_font,
+                bg=self.theme.bg_color,
+                fg=self.theme.text_color,
+                pady=10,
+            ).pack()
+
+            add_button = self.theme.create_pixel_button(
+                overview_frame,
+                "Initialize Appointments",
+                self.initialize_doctor_appointments,
+                color="#E91E63",
+            )
+            add_button.pack(pady=5)
+            return
+
+        # Create header row
+        header_frame = tk.Frame(overview_frame, bg=self.theme.bg_color)
+        header_frame.pack(fill=tk.X, pady=(5, 10))
+
+        headers = [
+            "Specialist",
+            "Last Visit",
+            "Next Appointment",
+            "Days Until",
+            "Status",
+            "Actions",
+        ]
+        widths = [15, 15, 15, 10, 10, 15]
+
+        for i, header in enumerate(headers):
+            header_label = tk.Label(
+                header_frame,
+                text=header,
+                font=(self.theme.small_font[0], self.theme.small_font[1], "bold"),
+                bg=self.theme.bg_color,
+                fg="#E91E63",
+                width=widths[i],
+                anchor="w",
+            )
+            header_label.grid(row=0, column=i, padx=5, pady=2, sticky="w")
+
+        # Add separator line
+        separator = ttk.Separator(overview_frame, orient="horizontal")
+        separator.pack(fill="x", pady=5)
+
+        # Display each subcategory
+        today = datetime.now().date()
+
+        # Sort subcategories by next appointment date
+        subcategories = sorted(
+            doctor_appointments.get("subcategories", []),
+            key=lambda x: datetime.strptime(
+                x.get("next_date", "2099-12-31"), "%Y-%m-%d"
+            ).date(),
+        )
+
+        for i, subcat in enumerate(subcategories):
+            row_frame = tk.Frame(
+                overview_frame,
+                bg=self.theme.bg_color
+                if i % 2 == 0
+                else self.theme.darken_color(self.theme.bg_color),
+            )
+            row_frame.pack(fill=tk.X, pady=1)
+
+            # Get appointment dates
+            last_date_str = subcat.get("last_date", "")
+            next_date_str = subcat.get("next_date", "")
+
+            try:
+                last_date = datetime.strptime(last_date_str, "%Y-%m-%d").date()
+                last_date_formatted = last_date.strftime("%d.%m.%y")
+            except:
+                last_date_formatted = "Not set"
+
+            try:
+                next_date = datetime.strptime(next_date_str, "%Y-%m-%d").date()
+                next_date_formatted = next_date.strftime("%d.%m.%y")
+
+                # Calculate days until next appointment
+                days_until = (next_date - today).days
+
+                # Determine status and color
+                if days_until < 0:
+                    status = "OVERDUE"
+                    status_color = "#F44336"  # Red for overdue
+                elif days_until <= 7:
+                    status = "URGENT"
+                    status_color = "#FF9800"  # Orange for urgent (within a week)
+                elif days_until <= 30:
+                    status = "SOON"
+                    status_color = "#FFC107"  # Yellow for upcoming (within a month)
+                else:
+                    status = "SCHEDULED"
+                    status_color = "#4CAF50"  # Green for scheduled
+            except:
+                next_date_formatted = "Not scheduled"
+                days_until = "—"
+                status = "NEEDED"
+                status_color = "#F44336"  # Red for needed
+
+            # 1. Specialist name
+            tk.Label(
+                row_frame,
+                text=subcat["name"],
+                font=self.theme.small_font,
+                bg=row_frame["bg"],
+                fg=self.theme.text_color,
+                width=widths[0],
+                anchor="w",
+            ).grid(row=0, column=0, padx=5, pady=5, sticky="w")
+
+            # 2. Last visit date
+            tk.Label(
+                row_frame,
+                text=last_date_formatted,
+                font=self.theme.small_font,
+                bg=row_frame["bg"],
+                fg=self.theme.text_color,
+                width=widths[1],
+                anchor="w",
+            ).grid(row=0, column=1, padx=5, pady=5, sticky="w")
+
+            # 3. Next appointment date
+            tk.Label(
+                row_frame,
+                text=next_date_formatted,
+                font=self.theme.small_font,
+                bg=row_frame["bg"],
+                fg=self.theme.text_color,
+                width=widths[2],
+                anchor="w",
+            ).grid(row=0, column=2, padx=5, pady=5, sticky="w")
+
+            # 4. Days until
+            tk.Label(
+                row_frame,
+                text=days_until
+                if isinstance(days_until, str)
+                else f"{days_until} days",
+                font=self.theme.small_font,
+                bg=row_frame["bg"],
+                fg=self.theme.text_color,
+                width=widths[3],
+                anchor="w",
+            ).grid(row=0, column=3, padx=5, pady=5, sticky="w")
+
+            # 5. Status
+            status_label = tk.Label(
+                row_frame,
+                text=status,
+                font=(self.theme.small_font[0], self.theme.small_font[1], "bold"),
+                bg=row_frame["bg"],
+                fg=status_color,
+                width=widths[4],
+                anchor="w",
+            )
+            status_label.grid(row=0, column=4, padx=5, pady=5, sticky="w")
+
+            # 6. Actions
+            actions_frame = tk.Frame(row_frame, bg=row_frame["bg"])
+            actions_frame.grid(row=0, column=5, padx=5, pady=5, sticky="w")
+
+            update_button = tk.Button(
+                actions_frame,
+                text="Update",
+                font=(self.theme.small_font[0], self.theme.small_font[1] - 1),
+                bg=self.theme.primary_color,
+                fg=self.theme.text_color,
+                relief=tk.FLAT,
+                command=lambda s=subcat: self.update_doctor_appointment(s),
+            )
+            update_button.pack(side=tk.LEFT, padx=2)
+
+            # Add "Schedule" button if there's no next appointment
+            if next_date_formatted == "Not scheduled" or days_until < 0:
+                schedule_button = tk.Button(
+                    actions_frame,
+                    text="Schedule",
+                    font=(self.theme.small_font[0], self.theme.small_font[1] - 1),
+                    bg="#4CAF50",  # Green for schedule
+                    fg="white",
+                    relief=tk.FLAT,
+                    command=lambda s=subcat: self.schedule_appointment(s),
+                )
+                schedule_button.pack(side=tk.LEFT, padx=2)
+
+        # Add a section for appointment management
+        control_section = tk.Frame(overview_frame, bg=self.theme.bg_color)
+        control_section.pack(fill=tk.X, pady=10)
+
+        # Button to add a new specialist
+        add_specialist_button = self.theme.create_pixel_button(
+            control_section,
+            "Add Specialist",
+            self.add_specialist,
+            color="#2196F3",
+            small=True,
+        )
+        add_specialist_button.pack(side=tk.LEFT, padx=10)
+
+        # Button to refresh appointments (check for overdue)
+        refresh_button = self.theme.create_pixel_button(
+            control_section,
+            "Refresh Status",
+            self.refresh_appointments,
+            color="#9C27B0",
+            small=True,
+        )
+        refresh_button.pack(side=tk.LEFT, padx=10)
+
+        # Check for reminders
+        self.check_appointment_reminders()
+
+    def initialize_doctor_appointments(self):
+        """Initialize the doctor appointments with default specialists"""
+        # Check if Doctor Appointments exists
+        doctor_appointments = None
+        for check_in in self.data.get("habits", {}).get("check_ins", []):
+            if check_in["name"] == "Doctor Appointments":
+                doctor_appointments = check_in
+                break
+
+        if not doctor_appointments:
+            # Create Doctor Appointments check-in
+            doctor_appointments = {
+                "name": "Doctor Appointments",
+                "icon": "🩺",
+                "category": "Health",
+                "dates": [],
+                "notes": {},
+                "subcategories": [],
+            }
+            self.data["habits"]["check_ins"].append(doctor_appointments)
+
+        # Initialize subcategories if not present
+        if (
+            "subcategories" not in doctor_appointments
+            or not doctor_appointments["subcategories"]
+        ):
+            doctor_appointments["subcategories"] = [
+                {
+                    "name": "Dermatologist",
+                    "last_date": "2025-03-31",
+                    "interval_months": 6,
+                    "next_date": "2025-09-30",
+                },
+                {
+                    "name": "Dentist",
+                    "last_date": "2025-03-31",
+                    "interval_months": 6,
+                    "next_date": "2025-09-30",
+                },
+                {
+                    "name": "Gynecologist",
+                    "last_date": "2025-04-07",
+                    "interval_months": 6,
+                    "next_date": "2025-10-07",
+                },
+                {
+                    "name": "GP",
+                    "last_date": "2025-04-09",
+                    "interval_months": 6,
+                    "next_date": "2025-10-09",
+                },
+            ]
+
+        # Add default dates to the dates list
+        for subcategory in doctor_appointments["subcategories"]:
+            if (
+                "last_date" in subcategory
+                and subcategory["last_date"] not in doctor_appointments["dates"]
+            ):
+                doctor_appointments["dates"].append(subcategory["last_date"])
+
+        # Save changes
+        self.data_manager.save_data()
+
+        # Refresh display
+        self.refresh_display()
+        messagebox.showinfo("Success", "Doctor appointments have been initialized!")
+
+    def add_specialist(self):
+        """Add a new specialist to the doctor appointments"""
+        # Find doctor appointments
+        doctor_appointments = None
+        for check_in in self.data.get("habits", {}).get("check_ins", []):
+            if check_in["name"] == "Doctor Appointments":
+                doctor_appointments = check_in
+                break
+
+        if not doctor_appointments:
+            messagebox.showerror("Error", "Doctor Appointments not found!")
+            return
+
+        # Create dialog for new specialist
+        dialog = tk.Toplevel(self.app.root)
+        dialog.title("Add New Specialist")
+        dialog.geometry("400x250")
+        dialog.configure(bg=self.theme.bg_color)
+        dialog.transient(self.app.root)
+        dialog.grab_set()
+
+        # Name input
+        name_frame = tk.Frame(dialog, bg=self.theme.bg_color)
+        name_frame.pack(fill=tk.X, padx=20, pady=10)
+
+        tk.Label(
+            name_frame,
+            text="Specialist Name:",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+        ).pack(side=tk.LEFT)
+
+        name_var = tk.StringVar()
+        name_entry = tk.Entry(
+            name_frame,
+            textvariable=name_var,
+            font=self.theme.small_font,
+            bg=self.theme.primary_color,
+            fg=self.theme.text_color,
+            width=25,
+        )
+        name_entry.pack(side=tk.LEFT, padx=10)
+
+        # Interval input
+        interval_frame = tk.Frame(dialog, bg=self.theme.bg_color)
+        interval_frame.pack(fill=tk.X, padx=20, pady=10)
+
+        tk.Label(
+            interval_frame,
+            text="Check-up Interval (months):",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+        ).pack(side=tk.LEFT)
+
+        interval_var = tk.StringVar(value="6")  # Default 6 months
+        vcmd = (
+            dialog.register(lambda P: P.isdigit() and int(P) > 0 if P else True),
+            "%P",
+        )
+
+        interval_entry = tk.Entry(
+            interval_frame,
+            textvariable=interval_var,
+            validate="key",
+            validatecommand=vcmd,
+            font=self.theme.small_font,
+            bg=self.theme.primary_color,
+            fg=self.theme.text_color,
+            width=5,
+        )
+        interval_entry.pack(side=tk.LEFT, padx=10)
+
+        # Last Visit Date
+        last_date_frame = tk.Frame(dialog, bg=self.theme.bg_color)
+        last_date_frame.pack(fill=tk.X, padx=20, pady=10)
+
+        tk.Label(
+            last_date_frame,
+            text="Last Visit Date (YYYY-MM-DD):",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+        ).pack(side=tk.LEFT)
+
+        today = datetime.now().date()
+        last_date_var = tk.StringVar(value=today.strftime("%Y-%m-%d"))
+
+        last_date_entry = tk.Entry(
+            last_date_frame,
+            textvariable=last_date_var,
+            font=self.theme.small_font,
+            bg=self.theme.primary_color,
+            fg=self.theme.text_color,
+            width=12,
+        )
+        last_date_entry.pack(side=tk.LEFT, padx=10)
+
+        # Buttons
+        buttons_frame = tk.Frame(dialog, bg=self.theme.bg_color)
+        buttons_frame.pack(pady=20)
+
+        cancel_button = self.theme.create_pixel_button(
+            buttons_frame,
+            "Cancel",
+            dialog.destroy,
+            color="#F44336",
+        )
+        cancel_button.pack(side=tk.LEFT, padx=10)
+
+        add_button = self.theme.create_pixel_button(
+            buttons_frame,
+            "Add Specialist",
+            lambda: self.save_new_specialist(
+                name_var.get(), interval_var.get(), last_date_var.get(), dialog
+            ),
+            color="#4CAF50",
+        )
+        add_button.pack(side=tk.LEFT, padx=10)
+
+        # Set focus
+        name_entry.focus_set()
+
+    def save_new_specialist(self, name, interval, last_date, dialog):
+        """Save a new specialist to the doctor appointments"""
+        # Validate inputs
+        if not name:
+            messagebox.showerror("Error", "Please enter a specialist name.")
+            return
+
+        try:
+            interval = int(interval)
+            if interval <= 0:
+                raise ValueError()
+        except:
+            messagebox.showerror("Error", "Interval must be a positive number.")
+            return
+
+        try:
+            last_date_obj = datetime.strptime(last_date, "%Y-%m-%d").date()
+        except:
+            messagebox.showerror("Error", "Invalid date format. Use YYYY-MM-DD.")
+            return
+
+        # Calculate next date
+        next_date_obj = date(
+            last_date_obj.year + ((last_date_obj.month + interval) // 12),
+            ((last_date_obj.month + interval) % 12) or 12,
+            last_date_obj.day,
+        )
+        next_date = next_date_obj.strftime("%Y-%m-%d")
+
+        # Find doctor appointments
+        doctor_appointments = None
+        for check_in in self.data.get("habits", {}).get("check_ins", []):
+            if check_in["name"] == "Doctor Appointments":
+                doctor_appointments = check_in
+                break
+
+        if not doctor_appointments:
+            messagebox.showerror("Error", "Doctor Appointments not found!")
+            return
+
+        # Check if specialist already exists
+        for subcategory in doctor_appointments.get("subcategories", []):
+            if subcategory["name"] == name:
+                messagebox.showerror(
+                    "Error", f"A specialist named '{name}' already exists."
+                )
+                return
+
+        # Add new specialist
+        new_specialist = {
+            "name": name,
+            "last_date": last_date,
+            "interval_months": interval,
+            "next_date": next_date,
+        }
+
+        if "subcategories" not in doctor_appointments:
+            doctor_appointments["subcategories"] = []
+
+        doctor_appointments["subcategories"].append(new_specialist)
+
+        # Add last_date to dates list if not already there
+        if last_date not in doctor_appointments.get("dates", []):
+            doctor_appointments["dates"].append(last_date)
+
+        # Save data
+        self.data_manager.save_data()
+
+        # Close dialog
+        dialog.destroy()
+
+        # Refresh display
+        self.refresh_display()
+
+        # Show confirmation
+        messagebox.showinfo(
+            "Success",
+            f"Specialist '{name}' added successfully!\nNext appointment: {next_date}",
+        )
+
+    def schedule_appointment(self, subcategory):
+        """Schedule a new appointment for a specialist"""
+        # Create dialog
+        dialog = tk.Toplevel(self.app.root)
+        dialog.title(f"Schedule {subcategory['name']} Appointment")
+        dialog.geometry("400x200")
+        dialog.configure(bg=self.theme.bg_color)
+        dialog.transient(self.app.root)
+        dialog.grab_set()
+
+        # Appointment date
+        date_frame = tk.Frame(dialog, bg=self.theme.bg_color)
+        date_frame.pack(fill=tk.X, padx=20, pady=10)
+
+        tk.Label(
+            date_frame,
+            text="Appointment Date (YYYY-MM-DD):",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+        ).pack(side=tk.LEFT)
+
+        # Default to recommended date (now + interval months)
+        today = datetime.now().date()
+        interval = subcategory.get("interval_months", 6)
+        suggested_date = date(
+            today.year + ((today.month + interval) // 12),
+            ((today.month + interval) % 12) or 12,
+            today.day,
+        )
+
+        date_var = tk.StringVar(value=suggested_date.strftime("%Y-%m-%d"))
+
+        date_entry = tk.Entry(
+            date_frame,
+            textvariable=date_var,
+            font=self.theme.small_font,
+            bg=self.theme.primary_color,
+            fg=self.theme.text_color,
+            width=12,
+        )
+        date_entry.pack(side=tk.LEFT, padx=10)
+
+        # Notes
+        notes_frame = tk.Frame(dialog, bg=self.theme.bg_color)
+        notes_frame.pack(fill=tk.X, padx=20, pady=10)
+
+        tk.Label(
+            notes_frame,
+            text="Notes (optional):",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+        ).pack(anchor="w")
+
+        notes_text = tk.Text(
+            notes_frame,
+            font=self.theme.small_font,
+            bg=self.theme.primary_color,
+            fg=self.theme.text_color,
+            height=3,
+            width=40,
+        )
+        notes_text.pack(pady=5)
+
+        # Buttons
+        buttons_frame = tk.Frame(dialog, bg=self.theme.bg_color)
+        buttons_frame.pack(pady=20)
+
+        cancel_button = self.theme.create_pixel_button(
+            buttons_frame,
+            "Cancel",
+            dialog.destroy,
+            color="#F44336",
+        )
+        cancel_button.pack(side=tk.LEFT, padx=10)
+
+        save_button = self.theme.create_pixel_button(
+            buttons_frame,
+            "Schedule",
+            lambda: self.save_appointment(
+                subcategory,
+                date_var.get(),
+                notes_text.get("1.0", tk.END).strip(),
+                dialog,
+            ),
+            color="#4CAF50",
+        )
+        save_button.pack(side=tk.LEFT, padx=10)
+
+        # Set focus
+        date_entry.focus_set()
+
+    def save_appointment(self, subcategory, date_str, notes, dialog):
+        """Save a scheduled appointment for a specialist"""
+        # Validate date
+        try:
+            appointment_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        except:
+            messagebox.showerror("Error", "Invalid date format. Use YYYY-MM-DD.")
+            return
+
+        # Find doctor appointments
+        doctor_appointments = None
+        for check_in in self.data.get("habits", {}).get("check_ins", []):
+            if check_in["name"] == "Doctor Appointments":
+                doctor_appointments = check_in
+                break
+
+        if not doctor_appointments:
+            messagebox.showerror("Error", "Doctor Appointments not found!")
+            return
+
+        # Update the subcategory's next_date
+        for i, subcat in enumerate(doctor_appointments.get("subcategories", [])):
+            if subcat["name"] == subcategory["name"]:
+                doctor_appointments["subcategories"][i]["next_date"] = date_str
+                break
+
+        # Add notes if provided
+        if notes:
+            if "notes" not in doctor_appointments:
+                doctor_appointments["notes"] = {}
+            doctor_appointments["notes"][date_str] = (
+                f"{subcategory['name']} appointment: {notes}"
+            )
+
+        # Save data
+        self.data_manager.save_data()
+
+        # Close dialog
+        dialog.destroy()
+
+        # Refresh display
+        self.refresh_display()
+
+        # Show confirmation
+        messagebox.showinfo(
+            "Success", f"{subcategory['name']} appointment scheduled for {date_str}"
+        )
+
+    def refresh_appointments(self):
+        """Refresh the appointments display and check for overdue appointments"""
+        # Find doctor appointments
+        doctor_appointments = None
+        for check_in in self.data.get("habits", {}).get("check_ins", []):
+            if check_in["name"] == "Doctor Appointments":
+                doctor_appointments = check_in
+                break
+
+        if not doctor_appointments:
+            messagebox.showinfo("Info", "No doctor appointments found.")
+            return
+
+        # Clear and rebuild the appointments frame
+        if self.appointments_frame:
+            for widget in self.appointments_frame.winfo_children():
+                widget.destroy()
+
+            # Repopulate with updated information
+            self.display_appointment_overview(self.appointments_frame.master)
+
+        # Check for reminders
+        self.check_appointment_reminders()
+
+        messagebox.showinfo("Success", "Appointments refreshed successfully!")
+
+    def check_appointment_reminders(self):
+        """Check for upcoming or overdue appointments and show reminders"""
+        # Find doctor appointments
+        doctor_appointments = None
+        for check_in in self.data.get("habits", {}).get("check_ins", []):
+            if check_in["name"] == "Doctor Appointments":
+                doctor_appointments = check_in
+                break
+
+        if not doctor_appointments:
+            return
+
+        today = datetime.now().date()
+
+        # Check each specialist for upcoming or overdue appointments
+        urgent_appointments = []
+        overdue_appointments = []
+
+        for subcat in doctor_appointments.get("subcategories", []):
+            try:
+                next_date = datetime.strptime(
+                    subcat.get("next_date", ""), "%Y-%m-%d"
+                ).date()
+                days_until = (next_date - today).days
+
+                if days_until < 0:
+                    # Overdue appointment
+                    overdue_appointments.append((subcat["name"], abs(days_until)))
+                elif days_until <= 14:
+                    # Upcoming appointment within 2 weeks
+                    urgent_appointments.append((subcat["name"], days_until))
+            except:
+                # No next appointment set
+                last_date = datetime.strptime(
+                    subcat.get("last_date", "2000-01-01"), "%Y-%m-%d"
+                ).date()
+                interval = subcat.get("interval_months", 6)
+                next_recommended = date(
+                    last_date.year + ((last_date.month + interval) // 12),
+                    ((last_date.month + interval) % 12) or 12,
+                    last_date.day,
+                )
+
+                days_since_recommended = (today - next_recommended).days
+                if days_since_recommended > 0:
+                    overdue_appointments.append(
+                        (subcat["name"], days_since_recommended)
+                    )
+
+        # Show reminders if needed
+        if overdue_appointments or urgent_appointments:
+            reminder_text = "Appointment Reminders:\n\n"
+
+            if overdue_appointments:
+                reminder_text += "OVERDUE APPOINTMENTS:\n"
+                for name, days in overdue_appointments:
+                    reminder_text += f"• {name}: {days} days overdue\n"
+                reminder_text += "\n"
+
+            if urgent_appointments:
+                reminder_text += "UPCOMING APPOINTMENTS:\n"
+                for name, days in urgent_appointments:
+                    reminder_text += f"• {name}: in {days} days\n"
+
+            messagebox.showwarning("Appointment Reminders", reminder_text)
 
     def prev_month(self):
         """Move to the previous month in the calendar."""
@@ -190,6 +974,17 @@ class CheckInTab:
             for date_str in check_in.get("dates", []):
                 check_in_dates.append(date_str)
 
+        # Get all next appointment dates
+        next_appointment_dates = []
+        for check_in in self.data.get("habits", {}).get("check_ins", []):
+            if (
+                check_in["name"] == "Doctor Appointments"
+                and "subcategories" in check_in
+            ):
+                for subcat in check_in.get("subcategories", []):
+                    if "next_date" in subcat:
+                        next_appointment_dates.append(subcat["next_date"])
+
         # Display calendar
         for week_idx, week in enumerate(cal):
             for day_idx, day in enumerate(week):
@@ -211,9 +1006,14 @@ class CheckInTab:
                     # Check if there are check-ins on this day
                     has_check_in = date_str in check_in_dates
 
+                    # Check if there are upcoming appointments
+                    has_appointment = date_str in next_appointment_dates
+
                     # Set frame color based on conditions
                     if is_today:
                         bg_color = "#FFF9C4"  # Light yellow for today
+                    elif has_appointment:
+                        bg_color = "#FFCCBC"  # Light orange for appointment days
                     elif has_check_in:
                         bg_color = "#E3F2FD"  # Light blue for check-in days
                     else:
@@ -283,6 +1083,41 @@ class CheckInTab:
                                 "<Button-1>",
                                 lambda e, d=date_str: self.show_check_in_details(d),
                             )
+
+                    # If there are appointments on this day, show indicator
+                    if has_appointment:
+                        # Find all appointments for this day
+                        day_appointments = []
+                        for check_in in self.data.get("habits", {}).get(
+                            "check_ins", []
+                        ):
+                            if (
+                                check_in["name"] == "Doctor Appointments"
+                                and "subcategories" in check_in
+                            ):
+                                for subcat in check_in.get("subcategories", []):
+                                    if subcat.get("next_date") == date_str:
+                                        day_appointments.append(subcat["name"])
+
+                        appt_label = tk.Label(
+                            frame,
+                            text="📅 " + ", ".join(day_appointments[:2]),
+                            font=("TkDefaultFont", 7),
+                            bg=bg_color,
+                            fg="#E91E63",
+                            wraplength=75,
+                        )
+                        appt_label.pack(anchor="w", padx=5, pady=2)
+
+                        if len(day_appointments) > 2:
+                            more_label = tk.Label(
+                                frame,
+                                text=f"+{len(day_appointments) - 2} more",
+                                font=("TkDefaultFont", 7),
+                                bg=bg_color,
+                                fg="#E91E63",
+                            )
+                            more_label.pack(anchor="w", padx=5, pady=0)
 
                     # Make the entire day clickable to add check-in
                     frame.bind(
@@ -416,8 +1251,11 @@ class CheckInTab:
                     and "subcategories" in check_in
                 ):
                     for subcat in check_in.get("subcategories", []):
-                        # Check if this subcategory matches this date
-                        if subcat.get("last_date") == date_str:
+                        # Check if this subcategory matches this date (last date or next date)
+                        if (
+                            subcat.get("last_date") == date_str
+                            or subcat.get("next_date") == date_str
+                        ):
                             subcat_frame = tk.Frame(
                                 check_in_frame,
                                 bg=self.theme.darken_color(self.theme.bg_color),
@@ -433,19 +1271,41 @@ class CheckInTab:
                             )
                             subcat_label.pack(anchor="w", padx=5)
 
-                            next_date_obj = datetime.strptime(
-                                subcat.get("next_date", "2025-01-01"), "%Y-%m-%d"
-                            ).date()
-                            next_date_str = next_date_obj.strftime("%B %d, %Y")
-
-                            next_date_label = tk.Label(
+                            # Label indicating if this is a past or upcoming appointment
+                            visit_type = (
+                                "Last visit"
+                                if subcat.get("last_date") == date_str
+                                else "Upcoming appointment"
+                            )
+                            type_label = tk.Label(
                                 subcat_frame,
-                                text=f"Next appointment: {next_date_str}",
+                                text=f"{visit_type} on {formatted_date}",
                                 font=("TkDefaultFont", 9),
                                 bg=self.theme.darken_color(self.theme.bg_color),
-                                fg="#FF5722",  # Orange for next date
+                                fg="#FF5722"
+                                if visit_type == "Upcoming appointment"
+                                else self.theme.text_color,
                             )
-                            next_date_label.pack(anchor="w", padx=5)
+                            type_label.pack(anchor="w", padx=5)
+
+                            # Show next date if this is a past visit
+                            if (
+                                subcat.get("last_date") == date_str
+                                and "next_date" in subcat
+                            ):
+                                next_date_obj = datetime.strptime(
+                                    subcat.get("next_date", "2025-01-01"), "%Y-%m-%d"
+                                ).date()
+                                next_date_str = next_date_obj.strftime("%B %d, %Y")
+
+                                next_date_label = tk.Label(
+                                    subcat_frame,
+                                    text=f"Next appointment: {next_date_str}",
+                                    font=("TkDefaultFont", 9),
+                                    bg=self.theme.darken_color(self.theme.bg_color),
+                                    fg="#FF5722",  # Orange for next date
+                                )
+                                next_date_label.pack(anchor="w", padx=5)
 
                 # Action buttons
                 button_frame = tk.Frame(
@@ -489,6 +1349,241 @@ class CheckInTab:
                 fg=self.theme.text_color,
                 pady=20,
             ).pack()
+
+        # Check if there are upcoming appointments on this date
+        has_appointments = False
+        for check_in in self.data.get("habits", {}).get("check_ins", []):
+            if (
+                check_in["name"] == "Doctor Appointments"
+                and "subcategories" in check_in
+            ):
+                for subcat in check_in.get("subcategories", []):
+                    if subcat.get("next_date") == date_str:
+                        has_appointments = True
+                        break
+
+        # Show section for upcoming appointments if they exist
+        if has_appointments:
+            appt_frame = tk.LabelFrame(
+                self.events_list_frame,
+                text="Upcoming Appointments",
+                font=self.theme.small_font,
+                bg=self.theme.bg_color,
+                fg="#E91E63",
+                padx=10,
+                pady=10,
+            )
+            appt_frame.pack(fill=tk.X, pady=10, padx=5)
+
+            for check_in in self.data.get("habits", {}).get("check_ins", []):
+                if (
+                    check_in["name"] == "Doctor Appointments"
+                    and "subcategories" in check_in
+                ):
+                    for subcat in check_in.get("subcategories", []):
+                        if subcat.get("next_date") == date_str:
+                            appt_item = tk.Frame(appt_frame, bg=self.theme.bg_color)
+                            appt_item.pack(fill=tk.X, pady=5)
+
+                            tk.Label(
+                                appt_item,
+                                text=f"🩺 {subcat['name']}",
+                                font=("TkDefaultFont", 10, "bold"),
+                                bg=self.theme.bg_color,
+                                fg="#E91E63",
+                            ).pack(anchor="w")
+
+                            buttons = tk.Frame(appt_item, bg=self.theme.bg_color)
+                            buttons.pack(anchor="w", pady=5)
+
+                            # Button to mark as completed
+                            complete_button = tk.Button(
+                                buttons,
+                                text="Complete",
+                                font=("TkDefaultFont", 9),
+                                bg="#4CAF50",
+                                fg="white",
+                                relief=tk.FLAT,
+                                command=lambda s=subcat: self.complete_appointment(
+                                    s, date_str
+                                ),
+                            )
+                            complete_button.pack(side=tk.LEFT, padx=5)
+
+                            # Button to reschedule
+                            reschedule_button = tk.Button(
+                                buttons,
+                                text="Reschedule",
+                                font=("TkDefaultFont", 9),
+                                bg="#FF9800",
+                                fg="white",
+                                relief=tk.FLAT,
+                                command=lambda s=subcat: self.schedule_appointment(s),
+                            )
+                            reschedule_button.pack(side=tk.LEFT, padx=5)
+
+    def complete_appointment(self, subcategory, date_str):
+        """Mark an appointment as completed"""
+        # Find doctor appointments
+        doctor_appointments = None
+        for check_in in self.data.get("habits", {}).get("check_ins", []):
+            if check_in["name"] == "Doctor Appointments":
+                doctor_appointments = check_in
+                break
+
+        if not doctor_appointments:
+            messagebox.showerror("Error", "Doctor Appointments not found!")
+            return
+
+        # Get notes for the appointment
+        notes_dialog = tk.Toplevel(self.app.root)
+        notes_dialog.title(f"Complete {subcategory['name']} Appointment")
+        notes_dialog.geometry("400x250")
+        notes_dialog.configure(bg=self.theme.bg_color)
+        notes_dialog.transient(self.app.root)
+        notes_dialog.grab_set()
+
+        # Notes input
+        notes_frame = tk.Frame(notes_dialog, bg=self.theme.bg_color)
+        notes_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
+
+        tk.Label(
+            notes_frame,
+            text="Appointment Notes:",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+        ).pack(anchor="w")
+
+        notes_text = tk.Text(
+            notes_frame,
+            font=self.theme.small_font,
+            bg=self.theme.primary_color,
+            fg=self.theme.text_color,
+            height=6,
+            width=40,
+        )
+        notes_text.pack(pady=5, fill=tk.BOTH, expand=True)
+
+        # Next appointment calculation
+        interval = subcategory.get("interval_months", 6)
+
+        # Calculate next appointment date (current date + interval months)
+        current_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        next_date = date(
+            current_date.year + ((current_date.month + interval) // 12),
+            ((current_date.month + interval) % 12) or 12,
+            current_date.day,
+        )
+
+        next_date_frame = tk.Frame(notes_dialog, bg=self.theme.bg_color)
+        next_date_frame.pack(fill=tk.X, padx=20, pady=10)
+
+        tk.Label(
+            next_date_frame,
+            text="Schedule Next Appointment:",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+        ).pack(side=tk.LEFT)
+
+        next_date_var = tk.StringVar(value=next_date.strftime("%Y-%m-%d"))
+
+        next_date_entry = tk.Entry(
+            next_date_frame,
+            textvariable=next_date_var,
+            font=self.theme.small_font,
+            bg=self.theme.primary_color,
+            fg=self.theme.text_color,
+            width=12,
+        )
+        next_date_entry.pack(side=tk.LEFT, padx=10)
+
+        # Buttons
+        buttons_frame = tk.Frame(notes_dialog, bg=self.theme.bg_color)
+        buttons_frame.pack(pady=10)
+
+        cancel_button = self.theme.create_pixel_button(
+            buttons_frame,
+            "Cancel",
+            notes_dialog.destroy,
+            color="#F44336",
+        )
+        cancel_button.pack(side=tk.LEFT, padx=10)
+
+        save_button = self.theme.create_pixel_button(
+            buttons_frame,
+            "Complete",
+            lambda: self.save_completed_appointment(
+                subcategory,
+                date_str,
+                notes_text.get("1.0", tk.END).strip(),
+                next_date_var.get(),
+                notes_dialog,
+            ),
+            color="#4CAF50",
+        )
+        save_button.pack(side=tk.LEFT, padx=10)
+
+    def save_completed_appointment(
+        self, subcategory, date_str, notes, next_date_str, dialog
+    ):
+        """Save a completed appointment with notes and schedule the next one"""
+        # Validate next date
+        try:
+            next_date_obj = datetime.strptime(next_date_str, "%Y-%m-%d").date()
+        except:
+            messagebox.showerror(
+                "Error", "Invalid next appointment date format. Use YYYY-MM-DD."
+            )
+            return
+
+        # Find doctor appointments
+        doctor_appointments = None
+        for check_in in self.data.get("habits", {}).get("check_ins", []):
+            if check_in["name"] == "Doctor Appointments":
+                doctor_appointments = check_in
+                break
+
+        if not doctor_appointments:
+            messagebox.showerror("Error", "Doctor Appointments not found!")
+            return
+
+        # Update the subcategory
+        for i, subcat in enumerate(doctor_appointments.get("subcategories", [])):
+            if subcat["name"] == subcategory["name"]:
+                # Update last visit date to the current appointment date
+                doctor_appointments["subcategories"][i]["last_date"] = date_str
+                # Set next appointment date
+                doctor_appointments["subcategories"][i]["next_date"] = next_date_str
+                break
+
+        # Add notes if provided
+        if notes:
+            if "notes" not in doctor_appointments:
+                doctor_appointments["notes"] = {}
+            doctor_appointments["notes"][date_str] = (
+                f"{subcategory['name']} visit: {notes}"
+            )
+
+        # Add this date to check-ins if not already there
+        if date_str not in doctor_appointments.get("dates", []):
+            doctor_appointments["dates"].append(date_str)
+
+        # Save data
+        self.data_manager.save_data()
+
+        # Close dialog
+        dialog.destroy()
+
+        # Refresh display
+        self.refresh_display()
+
+        # Show confirmation
+        messagebox.showinfo(
+            "Success",
+            f"{subcategory['name']} appointment completed.\nNext appointment scheduled for {next_date_str}",
+        )
 
     def display_check_ins(self):
         """Display check-ins for the selected month."""
@@ -599,6 +1694,85 @@ class CheckInTab:
                     # Skip invalid dates
                     continue
 
+        # Also add upcoming appointments in this month
+        for check_in in self.data.get("habits", {}).get("check_ins", []):
+            if (
+                check_in["name"] == "Doctor Appointments"
+                and "subcategories" in check_in
+            ):
+                for subcat in check_in.get("subcategories", []):
+                    if "next_date" in subcat:
+                        try:
+                            next_date = datetime.strptime(
+                                subcat["next_date"], "%Y-%m-%d"
+                            ).date()
+                            if month_start <= next_date <= month_end:
+                                found_check_ins = True
+
+                                # Create entry for this upcoming appointment
+                                date_frame = tk.Frame(
+                                    scroll_frame,
+                                    bg=self.theme.darken_color(self.theme.bg_color),
+                                    pady=5,
+                                )
+                                date_frame.pack(fill=tk.X)
+
+                                # Format date as "Mon, Sep 15"
+                                formatted_date = next_date.strftime("%a, %b %d")
+
+                                date_label = tk.Label(
+                                    date_frame,
+                                    text=formatted_date,
+                                    font=self.theme.small_font,
+                                    bg=date_frame["bg"],
+                                    fg=self.theme.text_color,
+                                    width=12,
+                                    anchor="w",
+                                )
+                                date_label.pack(side=tk.LEFT, padx=5)
+
+                                appt_label = tk.Label(
+                                    date_frame,
+                                    text=f"📅 {subcat['name']} appointment",
+                                    font=(
+                                        self.theme.small_font[0],
+                                        self.theme.small_font[1],
+                                        "bold",
+                                    ),
+                                    bg=date_frame["bg"],
+                                    fg="#E91E63",  # Pink for appointments
+                                    anchor="w",
+                                )
+                                appt_label.pack(
+                                    side=tk.LEFT, padx=5, fill=tk.X, expand=True
+                                )
+
+                                # Make the entire row clickable to view details
+                                date_frame.bind(
+                                    "<Button-1>",
+                                    lambda e,
+                                    d=subcat["next_date"]: self.show_check_in_details(
+                                        d
+                                    ),
+                                )
+                                date_label.bind(
+                                    "<Button-1>",
+                                    lambda e,
+                                    d=subcat["next_date"]: self.show_check_in_details(
+                                        d
+                                    ),
+                                )
+                                appt_label.bind(
+                                    "<Button-1>",
+                                    lambda e,
+                                    d=subcat["next_date"]: self.show_check_in_details(
+                                        d
+                                    ),
+                                )
+                        except ValueError:
+                            # Skip invalid dates
+                            continue
+
         if not found_check_ins:
             tk.Label(
                 scroll_frame,
@@ -608,166 +1782,6 @@ class CheckInTab:
                 fg=self.theme.text_color,
                 pady=20,
             ).pack()
-
-    def display_upcoming_appointments(self, parent):
-        """
-        Display upcoming doctor appointments.
-
-        Args:
-            parent: Parent frame to place the upcoming appointments view
-        """
-        # Create frame for upcoming appointments
-        upcoming_frame = tk.LabelFrame(
-            parent,
-            text="Upcoming Doctor Appointments",
-            font=self.theme.pixel_font,
-            bg=self.theme.bg_color,
-            fg="#E91E63",  # Pink for medical
-            padx=10,
-            pady=10,
-        )
-        upcoming_frame.pack(fill=tk.X, pady=10, padx=10)
-
-        # Find doctor appointments check-in
-        doctor_appointments = None
-        for check_in in self.data.get("habits", {}).get("check_ins", []):
-            if check_in["name"] == "Doctor Appointments":
-                doctor_appointments = check_in
-                break
-
-        if not doctor_appointments or "subcategories" not in doctor_appointments:
-            tk.Label(
-                upcoming_frame,
-                text="No upcoming doctor appointments found",
-                font=self.theme.small_font,
-                bg=self.theme.bg_color,
-                fg=self.theme.text_color,
-                pady=10,
-            ).pack()
-            return
-
-        # Create a grid layout for appointments
-        appointment_frame = tk.Frame(upcoming_frame, bg=self.theme.bg_color)
-        appointment_frame.pack(fill=tk.X, pady=5)
-
-        # Headers
-        tk.Label(
-            appointment_frame,
-            text="Doctor Type",
-            font=self.theme.small_font,
-            bg=self.theme.bg_color,
-            fg=self.theme.text_color,
-            width=15,
-            anchor="w",
-        ).grid(row=0, column=0, padx=5, pady=5, sticky="w")
-
-        tk.Label(
-            appointment_frame,
-            text="Last Visit",
-            font=self.theme.small_font,
-            bg=self.theme.bg_color,
-            fg=self.theme.text_color,
-            width=15,
-            anchor="w",
-        ).grid(row=0, column=1, padx=5, pady=5, sticky="w")
-
-        tk.Label(
-            appointment_frame,
-            text="Next Appointment",
-            font=self.theme.small_font,
-            bg=self.theme.bg_color,
-            fg=self.theme.text_color,
-            width=15,
-            anchor="w",
-        ).grid(row=0, column=2, padx=5, pady=5, sticky="w")
-
-        tk.Label(
-            appointment_frame,
-            text="Actions",
-            font=self.theme.small_font,
-            bg=self.theme.bg_color,
-            fg=self.theme.text_color,
-            width=10,
-            anchor="w",
-        ).grid(row=0, column=3, padx=5, pady=5, sticky="w")
-
-        # Display each subcategory
-        today = datetime.now().date()
-        row = 1
-
-        for subcat in doctor_appointments.get("subcategories", []):
-            # Get the last date
-            last_date_str = subcat.get("last_date", "")
-            next_date_str = subcat.get("next_date", "")
-
-            try:
-                last_date = datetime.strptime(last_date_str, "%Y-%m-%d").date()
-                last_date_formatted = last_date.strftime("%b %d, %Y")
-            except:
-                last_date_formatted = "Not set"
-
-            try:
-                next_date = datetime.strptime(next_date_str, "%Y-%m-%d").date()
-                next_date_formatted = next_date.strftime("%b %d, %Y")
-
-                # Check if next appointment is soon (within 30 days)
-                days_until = (next_date - today).days
-                if days_until <= 30 and days_until >= 0:
-                    next_date_color = "#F44336"  # Red for urgent
-                elif days_until < 0:
-                    next_date_color = "#9C27B0"  # Purple for overdue
-                else:
-                    next_date_color = "#4CAF50"  # Green for ok
-            except:
-                next_date_formatted = "Not scheduled"
-                next_date_color = self.theme.text_color
-
-            # Name
-            tk.Label(
-                appointment_frame,
-                text=subcat["name"],
-                font=self.theme.small_font,
-                bg=self.theme.bg_color,
-                fg=self.theme.text_color,
-                anchor="w",
-            ).grid(row=row, column=0, padx=5, pady=5, sticky="w")
-
-            # Last date
-            tk.Label(
-                appointment_frame,
-                text=last_date_formatted,
-                font=self.theme.small_font,
-                bg=self.theme.bg_color,
-                fg=self.theme.text_color,
-                anchor="w",
-            ).grid(row=row, column=1, padx=5, pady=5, sticky="w")
-
-            # Next date
-            tk.Label(
-                appointment_frame,
-                text=next_date_formatted,
-                font=self.theme.small_font,
-                bg=self.theme.bg_color,
-                fg=next_date_color,
-                anchor="w",
-            ).grid(row=row, column=2, padx=5, pady=5, sticky="w")
-
-            # Actions
-            actions_frame = tk.Frame(appointment_frame, bg=self.theme.bg_color)
-            actions_frame.grid(row=row, column=3, padx=5, pady=5, sticky="w")
-
-            update_button = tk.Button(
-                actions_frame,
-                text="Update",
-                font=("TkDefaultFont", 8),
-                bg=self.theme.primary_color,
-                fg=self.theme.text_color,
-                relief=tk.FLAT,
-                command=lambda s=subcat: self.update_doctor_appointment(s),
-            )
-            update_button.pack(side=tk.LEFT, padx=2)
-
-            row += 1
 
     def add_new_check_in(self):
         """Open a dialog to add a new check-in type."""
@@ -1161,9 +2175,10 @@ class CheckInTab:
 
                     # Calculate next date (6 months later)
                     next_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+                    interval = subcat.get("interval_months", 6)
                     next_date = date(
-                        next_date.year + ((next_date.month + 6) // 12),
-                        ((next_date.month + 6) % 12) or 12,
+                        next_date.year + ((next_date.month + interval) // 12),
+                        ((next_date.month + interval) % 12) or 12,
                         next_date.day,
                     )
                     subcat["next_date"] = next_date.strftime("%Y-%m-%d")
@@ -1542,10 +2557,24 @@ class CheckInTab:
         dialog.destroy()
 
         # Refresh display
-        self.habit_tracker.refresh_display()
+        self.refresh_display()
 
         # Show confirmation
         messagebox.showinfo(
             "Success",
             f"{subcategory['name']} appointment updated successfully.\nNext appointment: {next_date_str}",
         )
+
+    def refresh_display(self):
+        """Refresh the check-in tab display."""
+        # Clear and rebuild UI elements
+        if self.appointments_frame:
+            parent = self.appointments_frame.master
+            for widget in parent.winfo_children():
+                widget.destroy()
+
+            # Call create_check_ins_view again to rebuild everything
+            self.create_check_ins_view(parent)
+        else:
+            # If the frame doesn't exist yet, let the habit tracker refresh it
+            self.habit_tracker.refresh_display()
