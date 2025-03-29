@@ -39,6 +39,7 @@ class PixelTheme:
         self.korean_color = "#2196F3"  # Blue
         self.french_color = "#FF9800"  # Orange
         self.diss_color = "#9C27B0"  # Purple for dissertation
+        self.habit_color = "#673AB7"  # Purple for habit tracker
 
     def setup_fonts(self):
         """Set up fonts for the pixel art theme."""
