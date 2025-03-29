@@ -35,6 +35,77 @@ class HabitTracker:
         self.selected_month = self.current_date.month
         self.selected_year = self.current_date.year
         
+        # Make sure the habits structure exists
+        self.initialize_habits_data()
+        
+    def initialize_habits_data(self):
+        """
+        Ensure that the habit data structure exists in the data.
+        If not, initialize it with default values.
+        """
+        if "habits" not in self.data:
+            self.data["habits"] = {
+                "daily_habits": [
+                    {
+                        "name": "Early wakeup",
+                        "icon": "☀️",
+                        "active": True,
+                        "frequency": "daily",
+                        "streak": 0,
+                        "completed_dates": []
+                    },
+                    {
+                        "name": "Exercise",
+                        "icon": "🏃",
+                        "active": True,
+                        "frequency": "daily",
+                        "streak": 0,
+                        "completed_dates": []
+                    },
+                    {
+                        "name": "Reading",
+                        "icon": "📚",
+                        "active": True,
+                        "frequency": "daily",
+                        "streak": 0,
+                        "completed_dates": []
+                    },
+                    {
+                        "name": "Meditation",
+                        "icon": "🧘",
+                        "active": True,
+                        "frequency": "daily", 
+                        "streak": 0,
+                        "completed_dates": []
+                    },
+                    {
+                        "name": "Drink water",
+                        "icon": "💧",
+                        "active": True,
+                        "frequency": "daily",
+                        "streak": 0,
+                        "completed_dates": []
+                    }
+                ],
+                "custom_habits": [],
+                "check_ins": [
+                    {
+                        "name": "Doctor Appointments",
+                        "icon": "🩺",
+                        "dates": [],
+                        "notes": {}
+                    },
+                    {
+                        "name": "Dentist",
+                        "icon": "🦷",
+                        "dates": [],
+                        "notes": {}
+                    }
+                ]
+            }
+            # Save the initialized data
+            self.data_manager.save_data()
+        
     def show_module(self, parent_frame):
         """
         Show the habit tracker interface.
@@ -48,7 +119,7 @@ class HabitTracker:
             text="HABIT TRACKER",
             font=self.theme.heading_font,
             bg=self.theme.bg_color,
-            fg="#673AB7",  # Purple color for habit tracker
+            fg=self.theme.habit_color,  # Use the theme's habit color
         )
         title_label.pack(pady=20)
         
@@ -350,7 +421,7 @@ class HabitTracker:
             control_frame,
             "Add Check-in",
             self.add_new_check_in,
-            color="#2196F3",
+            color=self.theme.habit_color,
         )
         add_checkin_button.pack(side=tk.RIGHT, padx=10)
         
@@ -386,7 +457,7 @@ class HabitTracker:
             text="Check-in Details",
             font=self.theme.pixel_font,
             bg=self.theme.bg_color,
-            fg=self.theme.text_color,
+            fg=self.theme.habit_color,
             padx=10,
             pady=10,
         )
@@ -412,7 +483,7 @@ class HabitTracker:
             text="Habit Overview",
             font=self.theme.pixel_font,
             bg=self.theme.bg_color,
-            fg=self.theme.text_color,
+            fg=self.theme.habit_color,
         )
         overview_frame.pack(fill=tk.X, padx=10, pady=10)
         
@@ -463,7 +534,7 @@ class HabitTracker:
             text=str(total_habits),
             font=self.theme.heading_font,
             bg=self.theme.bg_color,
-            fg="#673AB7",  # Purple
+            fg=self.theme.habit_color,
         ).pack()
         
         # Active habits
@@ -532,7 +603,7 @@ class HabitTracker:
             text="Habit Performance",
             font=self.theme.pixel_font,
             bg=self.theme.bg_color,
-            fg=self.theme.text_color,
+            fg=self.theme.habit_color,
         )
         performance_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
@@ -1432,3 +1503,14 @@ class HabitTracker:
     def display_check_ins(self):
         """Display check-ins for the current month."""
         pass
+        
+    # Quick action methods for the main GUI
+    def quick_toggle_today(self, habit_name):
+        """
+        Quick toggle a habit for today from the main screen.
+        
+        Args:
+            habit_name: Name of the habit to toggle
+        """
+        today = datetime.now().date().strftime("%Y-%m-%d")
+        self.toggle_habit(habit_name, today)
