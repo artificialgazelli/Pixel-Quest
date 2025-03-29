@@ -35,9 +35,9 @@ class TodoList:
         self.data = data_manager.data
         self.theme = theme
 
-        # Current date 
+        # Current date
         self.current_date = datetime.now().date()
-        
+
         # Make sure the to-do structure exists
         self.initialize_todo_data()
 
@@ -63,7 +63,9 @@ class TodoList:
                         "title": "Complete project proposal",
                         "description": "Write and submit the project proposal document",
                         "created_date": datetime.now().strftime("%Y-%m-%d"),
-                        "due_date": (datetime.now() + timedelta(days=7)).strftime("%Y-%m-%d"),
+                        "due_date": (datetime.now() + timedelta(days=7)).strftime(
+                            "%Y-%m-%d"
+                        ),
                         "group": "Work",
                         "priority": "high",
                         "status": "active",
@@ -95,10 +97,10 @@ class TodoList:
                         "recurrence": {
                             "type": "weekly",
                             "days": [0, 1, 2, 3, 4],  # Monday to Friday
-                            "end_date": None
-                        }
+                            "end_date": None,
+                        },
                     },
-                ]
+                ],
             }
             # Save the initialized data
             self.data_manager.save_data()
@@ -124,29 +126,33 @@ class TodoList:
         if "tasks" in self.data["todo"]:
             has_diss_task = False
             for task in self.data["todo"]["tasks"]:
-                if (task.get("title") == "Work on dissertation" and 
-                    task.get("group") == "Dissertation" and 
-                    task.get("recurrence") is not None):
+                if (
+                    task.get("title") == "Work on dissertation"
+                    and task.get("group") == "Dissertation"
+                    and task.get("recurrence") is not None
+                ):
                     has_diss_task = True
                     break
-            
+
             if not has_diss_task:
-                self.data["todo"]["tasks"].append({
-                    "id": f"task_{len(self.data['todo']['tasks']) + 1}",
-                    "title": "Work on dissertation",
-                    "description": "Write at least 500 words for the dissertation",
-                    "created_date": datetime.now().strftime("%Y-%m-%d"),
-                    "due_date": datetime.now().strftime("%Y-%m-%d"),
-                    "group": "Dissertation",
-                    "priority": "high",
-                    "status": "active",
-                    "completed_date": None,
-                    "recurrence": {
-                        "type": "weekly",
-                        "days": [0, 1, 2, 3, 4],  # Monday to Friday
-                        "end_date": None
+                self.data["todo"]["tasks"].append(
+                    {
+                        "id": f"task_{len(self.data['todo']['tasks']) + 1}",
+                        "title": "Work on dissertation",
+                        "description": "Write at least 500 words for the dissertation",
+                        "created_date": datetime.now().strftime("%Y-%m-%d"),
+                        "due_date": datetime.now().strftime("%Y-%m-%d"),
+                        "group": "Dissertation",
+                        "priority": "high",
+                        "status": "active",
+                        "completed_date": None,
+                        "recurrence": {
+                            "type": "weekly",
+                            "days": [0, 1, 2, 3, 4],  # Monday to Friday
+                            "end_date": None,
+                        },
                     }
-                })
+                )
                 needs_save = True
 
         # Save if changes were made
@@ -207,43 +213,47 @@ class TodoList:
     def get_active_tasks(self, group_filter=None):
         """
         Get all active tasks, optionally filtered by group.
-        
+
         Args:
             group_filter: Optional group name to filter by
-            
+
         Returns:
             List of active tasks
         """
         tasks = self.data.get("todo", {}).get("tasks", [])
         active_tasks = [task for task in tasks if task.get("status") == "active"]
-        
+
         if group_filter and group_filter != "All":
-            active_tasks = [task for task in active_tasks if task.get("group") == group_filter]
-            
+            active_tasks = [
+                task for task in active_tasks if task.get("group") == group_filter
+            ]
+
         return active_tasks
-    
+
     def get_completed_tasks(self, group_filter=None):
         """
         Get all completed tasks, optionally filtered by group.
-        
+
         Args:
             group_filter: Optional group name to filter by
-            
+
         Returns:
             List of completed tasks
         """
         tasks = self.data.get("todo", {}).get("tasks", [])
         completed_tasks = [task for task in tasks if task.get("status") == "completed"]
-        
+
         if group_filter and group_filter != "All":
-            completed_tasks = [task for task in completed_tasks if task.get("group") == group_filter]
-            
+            completed_tasks = [
+                task for task in completed_tasks if task.get("group") == group_filter
+            ]
+
         return completed_tasks
-    
+
     def complete_task(self, task_id):
         """
         Mark a task as completed.
-        
+
         Args:
             task_id: ID of the task to complete
         """
@@ -254,52 +264,54 @@ class TodoList:
                 if task.get("recurrence"):
                     # Create a new instance of the task for the next occurrence
                     self._create_next_occurrence(task)
-                
+
                 # Mark the current task as completed
                 self.data["todo"]["tasks"][i]["status"] = "completed"
-                self.data["todo"]["tasks"][i]["completed_date"] = datetime.now().strftime("%Y-%m-%d")
+                self.data["todo"]["tasks"][i]["completed_date"] = (
+                    datetime.now().strftime("%Y-%m-%d")
+                )
                 self.data_manager.save_data()
                 return True
-        
+
         return False
-    
+
     def _create_next_occurrence(self, task):
         """
         Create the next occurrence of a recurring task.
-        
+
         Args:
             task: The recurring task to create a new instance of
         """
         recurrence = task.get("recurrence")
         if not recurrence:
             return
-        
+
         new_task = task.copy()
-        
+
         # Generate a new ID
         new_task["id"] = f"task_{len(self.data['todo']['tasks']) + 1}"
-        
+
         # Determine the next due date
         current_due_date = datetime.strptime(task["due_date"], "%Y-%m-%d").date()
         next_due_date = None
-        
+
         if recurrence["type"] == "daily":
             next_due_date = current_due_date + timedelta(days=1)
-        
+
         elif recurrence["type"] == "weekly":
             # Find the next weekday in the list
             recurrence_days = recurrence.get("days", [])
             if recurrence_days:
                 # Current weekday (0=Monday)
                 current_weekday = current_due_date.weekday()
-                
+
                 # Find the next weekday in the list
                 next_day_index = None
                 for day in recurrence_days:
                     if day > current_weekday:
                         next_day_index = day
                         break
-                
+
                 if next_day_index is not None:
                     # Next day is in the same week
                     days_ahead = next_day_index - current_weekday
@@ -308,54 +320,54 @@ class TodoList:
                     # Next day is in the next week
                     days_ahead = 7 - current_weekday + recurrence_days[0]
                     next_due_date = current_due_date + timedelta(days=days_ahead)
-        
+
         elif recurrence["type"] == "monthly":
             # Move to the next month, keeping the same day
             next_month = current_due_date.month + 1
             next_year = current_due_date.year
-            
+
             if next_month > 12:
                 next_month = 1
                 next_year += 1
-            
+
             # Handle month length differences (e.g., Jan 31 -> Feb 28)
             last_day = calendar.monthrange(next_year, next_month)[1]
             next_day = min(current_due_date.day, last_day)
-            
+
             next_due_date = datetime(next_year, next_month, next_day).date()
-        
+
         elif recurrence["type"] == "yearly":
-            next_due_date = datetime(current_due_date.year + 1, 
-                                    current_due_date.month, 
-                                    current_due_date.day).date()
-        
+            next_due_date = datetime(
+                current_due_date.year + 1, current_due_date.month, current_due_date.day
+            ).date()
+
         elif recurrence["type"] == "custom":
             # Custom interval in days
             interval_days = recurrence.get("interval", 1)
             next_due_date = current_due_date + timedelta(days=interval_days)
-        
+
         # Check if the task should still recur (end date check)
         if recurrence.get("end_date") and next_due_date:
             end_date = datetime.strptime(recurrence["end_date"], "%Y-%m-%d").date()
             if next_due_date > end_date:
                 return  # Don't create a new task if past the end date
-        
+
         # Update the new task with the next due date
         if next_due_date:
             new_task["due_date"] = next_due_date.strftime("%Y-%m-%d")
             new_task["status"] = "active"
             new_task["completed_date"] = None
-            
+
             # Add the new task to the task list
             self.data["todo"]["tasks"].append(new_task)
-            
+
     def delete_task(self, task_id):
         """
         Delete a task from the to-do list.
-        
+
         Args:
             task_id: ID of the task to delete
-            
+
         Returns:
             True if the task was deleted, False otherwise
         """
@@ -365,5 +377,5 @@ class TodoList:
                 del self.data["todo"]["tasks"][i]
                 self.data_manager.save_data()
                 return True
-        
+
         return False
