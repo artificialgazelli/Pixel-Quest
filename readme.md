@@ -9,6 +9,7 @@ Pixel Quest turns skill development into a game with points, levels, streaks, an
 - **Art** - Track fundamentals, sketchbook practice, and accountability posts
 - **Korean** - Track language learning, immersion, and practical application
 - **French** - Track language learning, immersion, and practical application
+- **Dissertation** - Track my work on my dissertation
 
 The application uses a pixel art aesthetic and gamification principles to make skill development more engaging and fun.
 
