@@ -3,26 +3,29 @@ Main GUI components for the Pixel Quest application.
 """
 
 import tkinter as tk
+from tkinter import ttk
 from src.theme import PixelTheme
 from src.data_manager import DataManager
 from src.modules.art_module import ArtModule
 from src.modules.korean_module import KoreanModule
 from src.modules.french_module import FrenchModule
+from src.modules.diss_module import DissModule
 from src.modules.statistics import StatisticsModule
 from src.modules.settings import SettingsModule
 from src.modules.rewards import RewardsModule
 from src.modules.health import HealthCheckModule
+
 
 class QuestGame:
     """
     Main application class for the Pixel Quest game.
     Manages the main window, theme, and navigation between modules.
     """
-    
+
     def __init__(self, root):
         """
         Initialize the Quest Game application.
-        
+
         Args:
             root: The root Tkinter window
         """
@@ -32,7 +35,7 @@ class QuestGame:
 
         # Set up pixel art theme
         self.theme = PixelTheme(self.root)
-        
+
         # Initialize data manager
         self.data_manager = DataManager()
         self.data = self.data_manager.data
@@ -40,29 +43,30 @@ class QuestGame:
         # Main frame
         self.main_frame = tk.Frame(self.root, bg=self.theme.bg_color)
         self.main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
-        
+
         # Initialize modules
         self.initialize_modules()
 
-        # Show the main menu
+        # Ensure all modules are initialized before showing the main menu
         self.show_main_menu()
-        
+
     def initialize_modules(self):
         """Initialize all the application modules."""
         # Module initialization
         self.art_module = ArtModule(self, self.data_manager, self.theme)
         self.korean_module = KoreanModule(self, self.data_manager, self.theme)
         self.french_module = FrenchModule(self, self.data_manager, self.theme)
+        self.diss_module = DissModule(self, self.data_manager, self.theme)
         self.statistics_module = StatisticsModule(self, self.data_manager, self.theme)
         self.settings_module = SettingsModule(self, self.data_manager, self.theme)
         self.rewards_module = RewardsModule(self, self.data_manager, self.theme)
         self.health_module = HealthCheckModule(self, self.data_manager, self.theme)
-        
+
     def clear_frame(self):
         """Clear all widgets from the main frame."""
         for widget in self.main_frame.winfo_children():
             widget.destroy()
-            
+
     def show_main_menu(self):
         """Display the main menu with options for each module."""
         self.clear_frame()
@@ -108,11 +112,11 @@ class QuestGame:
 
         # === SETTINGS TAB ===
         self.settings_module.create_settings_tab(settings_tab)
-            
+
     def create_modules_tab(self, parent):
         """
         Create the modules tab content with pixel art styling and centered buttons.
-        
+
         Args:
             parent: Parent widget
         """
@@ -127,7 +131,12 @@ class QuestGame:
         # Module buttons with status
         # Art module button
         art_frame = tk.Frame(
-            center_frame, bg=self.theme.bg_color, padx=10, pady=10, relief=tk.RIDGE, bd=3
+            center_frame,
+            bg=self.theme.bg_color,
+            padx=10,
+            pady=10,
+            relief=tk.RIDGE,
+            bd=3,
         )
         art_frame.pack(side=tk.LEFT, padx=10, pady=10)
 
@@ -162,7 +171,12 @@ class QuestGame:
 
         # Korean module button
         korean_frame = tk.Frame(
-            center_frame, bg=self.theme.bg_color, padx=10, pady=10, relief=tk.RIDGE, bd=3
+            center_frame,
+            bg=self.theme.bg_color,
+            padx=10,
+            pady=10,
+            relief=tk.RIDGE,
+            bd=3,
         )
         korean_frame.pack(side=tk.LEFT, padx=10, pady=10)
 
@@ -197,7 +211,12 @@ class QuestGame:
 
         # French module button
         french_frame = tk.Frame(
-            center_frame, bg=self.theme.bg_color, padx=10, pady=10, relief=tk.RIDGE, bd=3
+            center_frame,
+            bg=self.theme.bg_color,
+            padx=10,
+            pady=10,
+            relief=tk.RIDGE,
+            bd=3,
         )
         french_frame.pack(side=tk.LEFT, padx=10, pady=10)
 
@@ -230,6 +249,47 @@ class QuestGame:
         )
         french_streak.pack()
 
+        # Add after the French module button in create_modules_tab() method
+        # Dissertation module button
+        diss_frame = tk.Frame(
+            center_frame,
+            bg=self.theme.bg_color,
+            padx=10,
+            pady=10,
+            relief=tk.RIDGE,
+            bd=3,
+        )
+        diss_frame.pack(side=tk.LEFT, padx=10, pady=10)
+
+        diss_button = self.theme.create_pixel_button(
+            diss_frame,
+            "Diss Quest",
+            lambda: self.show_module("diss"),
+            color=self.theme.diss_color,
+            width=10,
+            height=2,
+        )
+        diss_button.pack()
+
+        diss_status = tk.Label(
+            diss_frame,
+            text=f"Level: {self.data['diss']['level']} | Points: {self.data['diss']['points']}",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+        )
+        diss_status.pack(pady=5)
+
+        # Add streak display
+        diss_streak = tk.Label(
+            diss_frame,
+            text=f"Current Streak: {self.data['diss']['streak']} days",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg="#FF5722",
+        )
+        diss_streak.pack()
+
         # Health check
         health_frame = tk.Frame(parent, bg=self.theme.bg_color, relief=tk.RIDGE, bd=3)
         health_frame.pack(pady=10, fill=tk.X)
@@ -257,7 +317,10 @@ class QuestGame:
         health_status_label.pack(pady=5)
 
         health_button = self.theme.create_pixel_button(
-            health_frame, "Complete Health Check", self.health_module.do_health_check, color="#673AB7"
+            health_frame,
+            "Complete Health Check",
+            self.health_module.do_health_check,
+            color="#673AB7",
         )
         health_button.pack(pady=5)
 
@@ -266,23 +329,24 @@ class QuestGame:
             parent, "View Rewards", self.rewards_module.show_rewards, color="#E91E63"
         )
         rewards_button.pack(pady=5)
-        
+
     def show_module(self, module_name):
         """
         Show the selected module interface.
-        
+
         Args:
-            module_name: Name of the module to show ('art', 'korean', or 'french')
+            module_name: Name of the module to show ('art', 'korean', 'french', or 'diss')
         """
         self.clear_frame()
 
         # Map module names to their corresponding modules
         modules = {
-            'art': self.art_module,
-            'korean': self.korean_module,
-            'french': self.french_module
+            "art": self.art_module,
+            "korean": self.korean_module,
+            "french": self.french_module,
+            "diss": self.diss_module,
         }
-        
+
         # Display the selected module
         if module_name in modules:
             modules[module_name].show_module(self.main_frame)

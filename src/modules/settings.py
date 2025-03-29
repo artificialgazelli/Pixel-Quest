@@ -4,17 +4,18 @@ Handles application settings and data management.
 """
 
 import tkinter as tk
-from tkinter import ttk, messagebox, filedialog
+from tkinter import messagebox, filedialog
+
 
 class SettingsModule:
     """
     Manages the settings functionality.
     """
-    
+
     def __init__(self, app, data_manager, theme):
         """
         Initialize the settings module.
-        
+
         Args:
             app: Main application instance
             data_manager: Data manager instance
@@ -24,11 +25,11 @@ class SettingsModule:
         self.data_manager = data_manager
         self.data = data_manager.data
         self.theme = theme
-        
+
     def create_settings_tab(self, parent):
         """
         Create the settings tab content with pixel art styling.
-        
+
         Args:
             parent: Parent widget to place the settings tab
         """
@@ -138,7 +139,7 @@ Created with Python and Tkinter."""
             fg=self.theme.text_color,
             font=self.theme.small_font,
         ).pack(pady=10)
-        
+
     def backup_data(self):
         """Create a backup of the current data."""
         try:
@@ -148,7 +149,7 @@ Created with Python and Tkinter."""
             )
         except Exception as e:
             messagebox.showerror("Backup Error", f"Failed to create backup: {str(e)}")
-            
+
     def restore_data(self):
         """Restore data from a backup file."""
         # Open file dialog to select backup file
@@ -173,14 +174,15 @@ Created with Python and Tkinter."""
                 messagebox.showinfo(
                     "Restore Successful", "Data has been restored from backup"
                 )
-                
+
                 # Refresh display
                 self.app.show_main_menu()
             else:
                 messagebox.showerror(
-                    "Restore Error", "Failed to restore from backup. Invalid backup file."
+                    "Restore Error",
+                    "Failed to restore from backup. Invalid backup file.",
                 )
-                
+
     def confirm_reset_data(self):
         """Confirm before resetting all data."""
         if messagebox.askyesno(

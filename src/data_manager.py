@@ -8,25 +8,26 @@ import os
 import shutil
 from datetime import datetime
 
+
 class DataManager:
     """
     Manages game data loading, saving, and manipulation.
     """
-    
+
     def __init__(self, data_file="quest_data.json"):
         """
         Initialize the data manager.
-        
+
         Args:
             data_file: Path to the data file
         """
         self.data_file = data_file
         self.load_data()
-        
+
     def load_data(self):
         """
         Load game data from JSON file or initialize if it doesn't exist.
-        
+
         Returns:
             The loaded data dictionary
         """
@@ -206,6 +207,121 @@ class DataManager:
                         ],
                     },
                 },
+                # Add this to the initial data structure in DataManager.load_data() - after the "french" section and before the "health_status" section
+                "diss": {
+                    "points": 0,
+                    "level": 1,
+                    "streak": 0,
+                    "last_practice": None,
+                    "tasks": {
+                        "preparation": [
+                            {
+                                "name": "Literature review",
+                                "start_date": "27.03.2025",
+                                "end_date": "31.08.2025",
+                                "total_hours": 100,
+                                "hours_worked": 0,
+                            },
+                            {
+                                "name": "Methodology development",
+                                "start_date": "15.04.2025",
+                                "end_date": "31.07.2025",
+                                "total_hours": 80,
+                                "hours_worked": 0,
+                            },
+                            {
+                                "name": "Data collection and processing",
+                                "start_date": "01.05.2025",
+                                "end_date": "31.07.2025",
+                                "total_hours": 120,
+                                "hours_worked": 0,
+                            },
+                            {
+                                "name": "Writing theoretical chapter",
+                                "start_date": "01.06.2025",
+                                "end_date": "15.10.2025",
+                                "total_hours": 150,
+                                "hours_worked": 0,
+                            },
+                        ],
+                        "empirical": [
+                            {
+                                "name": "Qualitative discourse analysis",
+                                "start_date": "01.08.2025",
+                                "end_date": "15.01.2026",
+                                "total_hours": 200,
+                                "hours_worked": 0,
+                            },
+                            {
+                                "name": "Writing results",
+                                "start_date": "16.01.2026",
+                                "end_date": "31.03.2026",
+                                "total_hours": 100,
+                                "hours_worked": 0,
+                            },
+                            {
+                                "name": "Topic modeling",
+                                "start_date": "16.01.2026",
+                                "end_date": "31.05.2026",
+                                "total_hours": 150,
+                                "hours_worked": 0,
+                            },
+                            {
+                                "name": "Writing results",
+                                "start_date": "01.06.2026",
+                                "end_date": "31.08.2026",
+                                "total_hours": 100,
+                                "hours_worked": 0,
+                            },
+                        ],
+                        "integration": [
+                            {
+                                "name": "Finalizing methodology chapter",
+                                "start_date": "01.06.2026",
+                                "end_date": "15.09.2026",
+                                "total_hours": 80,
+                                "hours_worked": 0,
+                            },
+                            {
+                                "name": "Writing discussion and conclusion",
+                                "start_date": "01.09.2026",
+                                "end_date": "15.01.2027",
+                                "total_hours": 120,
+                                "hours_worked": 0,
+                            },
+                            {
+                                "name": "Revising introduction",
+                                "start_date": "16.01.2027",
+                                "end_date": "28.02.2027",
+                                "total_hours": 60,
+                                "hours_worked": 0,
+                            },
+                        ],
+                        "finalization": [
+                            {
+                                "name": "Proofreading and revision",
+                                "start_date": "01.03.2027",
+                                "end_date": "15.06.2027",
+                                "total_hours": 100,
+                                "hours_worked": 0,
+                            },
+                            {
+                                "name": "Layout and formatting",
+                                "start_date": "16.06.2027",
+                                "end_date": "15.08.2027",
+                                "total_hours": 60,
+                                "hours_worked": 0,
+                            },
+                            {
+                                "name": "Corrections and printing",
+                                "start_date": "16.08.2027",
+                                "end_date": "31.10.2027",
+                                "total_hours": 40,
+                                "hours_worked": 0,
+                            },
+                        ],
+                    },
+                },
                 "health_status": True,
                 "last_health_check": None,
                 "rewards": {
@@ -248,18 +364,18 @@ class DataManager:
                 },
             }
             self.save_data()
-            
+
         return self.data
-    
+
     def save_data(self):
         """Save game data to JSON file."""
         with open(self.data_file, "w") as f:
             json.dump(self.data, f, indent=4)
-            
+
     def backup_data(self):
         """
         Create a backup of the current data.
-        
+
         Returns:
             The path to the backup file
         """
@@ -272,14 +388,14 @@ class DataManager:
             return backup_file
         except Exception as e:
             raise Exception(f"Failed to create backup: {str(e)}")
-            
+
     def restore_from_backup(self, backup_file):
         """
         Restore data from a backup file.
-        
+
         Args:
             backup_file: Path to the backup file
-            
+
         Returns:
             True if successful, False otherwise
         """
@@ -298,17 +414,17 @@ class DataManager:
             # Reload data
             self.load_data()
             return True
-            
+
         except Exception:
             return False
-            
+
     def export_data(self, filename=None):
         """
         Export statistics and logs to a file.
-        
+
         Args:
             filename: Custom filename for export (optional)
-            
+
         Returns:
             The path to the exported file
         """
@@ -323,18 +439,18 @@ class DataManager:
             return filename
         except Exception as e:
             raise Exception(f"Failed to export data: {str(e)}")
-            
+
     def reset_data(self):
         """
         Reset all data to default values.
-        
+
         Returns:
             True if successful
         """
         # Delete the data file if it exists
         if os.path.exists(self.data_file):
             os.remove(self.data_file)
-            
+
         # Reinitialize data
         self.load_data()
         return True

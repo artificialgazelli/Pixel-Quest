@@ -4,18 +4,19 @@ Provides theme setup, colors, fonts, and styled UI components.
 """
 
 import tkinter as tk
-from tkinter import ttk, font
+from tkinter import ttk, font, TclError
+
 
 class PixelTheme:
     """
     Manages the pixel art theme for the application including colors,
     fonts, and styled UI components.
     """
-    
+
     def __init__(self, root):
         """
         Initialize the pixel art theme.
-        
+
         Args:
             root: The root Tkinter window
         """
@@ -23,7 +24,7 @@ class PixelTheme:
         self.setup_colors()
         self.setup_fonts()
         self.configure_styles()
-        
+
     def setup_colors(self):
         """Set up the color scheme for the pixel art theme."""
         # Main colors
@@ -37,7 +38,8 @@ class PixelTheme:
         self.art_color = "#4CAF50"  # Green
         self.korean_color = "#2196F3"  # Blue
         self.french_color = "#FF9800"  # Orange
-        
+        self.diss_color = "#9C27B0"  # Purple for dissertation
+
     def setup_fonts(self):
         """Set up fonts for the pixel art theme."""
         try:
@@ -50,12 +52,12 @@ class PixelTheme:
             self.pixel_font = font.Font(family="Courier New", size=12, weight="bold")
             self.heading_font = font.Font(family="Courier New", size=18, weight="bold")
             self.small_font = font.Font(family="Courier New", size=9, weight="bold")
-        except:
+        except (TclError, RuntimeError):
             # Fallback fonts
             self.pixel_font = font.Font(family="Courier New", size=12, weight="bold")
             self.heading_font = font.Font(family="Courier New", size=18, weight="bold")
             self.small_font = font.Font(family="Courier New", size=9, weight="bold")
-            
+
     def configure_styles(self):
         """Configure ttk styles for the pixel art theme."""
         # Configure the root window
@@ -87,7 +89,7 @@ class PixelTheme:
         self.style.configure(
             "Pixel.TCombobox", background=self.bg_color, fieldbackground=self.bg_color
         )
-        
+
         # Configure notebook styles for tabs
         self.style.configure("TNotebook", background=self.bg_color)
         self.style.configure(
@@ -97,11 +99,13 @@ class PixelTheme:
             font=self.pixel_font,
         )
         self.style.map("TNotebook.Tab", background=[("selected", self.secondary_color)])
-        
-    def create_pixel_button(self, parent, text, command, color=None, width=None, height=None):
+
+    def create_pixel_button(
+        self, parent, text, command, color=None, width=None, height=None
+    ):
         """
         Create a button with pixel art styling.
-        
+
         Args:
             parent: Parent widget
             text: Button text
@@ -109,7 +113,7 @@ class PixelTheme:
             color: Button color (defaults to primary color)
             width: Button width
             height: Button height
-            
+
         Returns:
             The created button widget
         """
@@ -136,14 +140,14 @@ class PixelTheme:
         button.config(highlightbackground=self.text_color, highlightthickness=2)
 
         return button
-    
+
     def darken_color(self, hex_color):
         """
         Darken a hex color for shading effects.
-        
+
         Args:
             hex_color: Hex color code
-            
+
         Returns:
             Darkened hex color code
         """

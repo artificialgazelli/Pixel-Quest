@@ -8,15 +8,16 @@ from tkinter import ttk, messagebox
 import random
 from datetime import datetime
 
+
 class RewardsModule:
     """
     Manages the rewards functionality.
     """
-    
+
     def __init__(self, app, data_manager, theme):
         """
         Initialize the rewards module.
-        
+
         Args:
             app: Main application instance
             data_manager: Data manager instance
@@ -26,7 +27,7 @@ class RewardsModule:
         self.data_manager = data_manager
         self.data = data_manager.data
         self.theme = theme
-        
+
     def show_rewards(self):
         """Show rewards window with management options and pixel art styling."""
         rewards_window = tk.Toplevel(self.app.root)
@@ -113,11 +114,11 @@ class RewardsModule:
         # TAB 3: REWARD HISTORY
         # ----------------------------------------
         self.create_reward_history_tab(history_tab)
-        
+
     def create_rewards_list(self, parent):
         """
         Create a scrollable list of rewards with pixel art styling.
-        
+
         Args:
             parent: Parent widget for the rewards list
         """
@@ -234,11 +235,11 @@ class RewardsModule:
                 fg=self.theme.text_color,
             )
             text.pack(side=tk.LEFT)
-            
+
     def create_manage_rewards_tab(self, parent):
         """
         Create the reward management tab with functionality to add, edit, and delete rewards.
-        
+
         Args:
             parent: Parent widget for the reward management tab
         """
@@ -268,11 +269,11 @@ class RewardsModule:
         self.create_reward_management_list(small_tab, "small")
         self.create_reward_management_list(medium_tab, "medium")
         self.create_reward_management_list(large_tab, "large")
-        
+
     def create_reward_management_list(self, parent, tier):
         """
         Create a list of rewards with edit/delete buttons for a specific tier.
-        
+
         Args:
             parent: Parent widget for the reward management list
             tier: Reward tier ('small', 'medium', or 'large')
@@ -282,7 +283,9 @@ class RewardsModule:
         container_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
         # Scrollable frame for the reward list
-        canvas = tk.Canvas(container_frame, bg=self.theme.bg_color, highlightthickness=0)
+        canvas = tk.Canvas(
+            container_frame, bg=self.theme.bg_color, highlightthickness=0
+        )
         scrollbar = ttk.Scrollbar(
             container_frame, orient="vertical", command=canvas.yview
         )
@@ -389,11 +392,11 @@ class RewardsModule:
             color="#4CAF50",
         )
         add_button.pack(pady=10)
-        
+
     def create_reward_history_tab(self, parent):
         """
         Create the reward history tab to display claimed rewards.
-        
+
         Args:
             parent: Parent widget for the reward history tab
         """
@@ -422,7 +425,9 @@ class RewardsModule:
         container_frame = tk.Frame(parent, bg=self.theme.bg_color)
         container_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        canvas = tk.Canvas(container_frame, bg=self.theme.bg_color, highlightthickness=0)
+        canvas = tk.Canvas(
+            container_frame, bg=self.theme.bg_color, highlightthickness=0
+        )
         scrollbar = ttk.Scrollbar(
             container_frame, orient="vertical", command=canvas.yview
         )
@@ -528,11 +533,11 @@ class RewardsModule:
                 anchor="w",
             )
             reward_label.grid(row=0, column=2, padx=10, sticky="w")
-            
+
     def add_reward(self, entry_widget, tier):
         """
         Add a new reward to a specific tier.
-        
+
         Args:
             entry_widget: Entry widget containing the reward text
             tier: Reward tier ('small', 'medium', or 'large')
@@ -562,11 +567,11 @@ class RewardsModule:
                 "Already Exists",
                 f"This reward already exists in your {tier} rewards list.",
             )
-            
+
     def edit_reward(self, reward, tier):
         """
         Edit an existing reward.
-        
+
         Args:
             reward: Current reward text
             tier: Reward tier ('small', 'medium', or 'large')
@@ -617,11 +622,11 @@ class RewardsModule:
             button_frame, "Cancel", dialog.destroy, color="#9E9E9E"
         )
         cancel_button.pack(side=tk.LEFT, padx=10)
-        
+
     def save_edited_reward(self, dialog, old_reward, new_reward, tier):
         """
         Save the edited reward.
-        
+
         Args:
             dialog: Dialog window to close after saving
             old_reward: Original reward text
@@ -657,11 +662,11 @@ class RewardsModule:
         else:
             # No changes made
             dialog.destroy()
-            
+
     def delete_reward(self, reward, tier):
         """
         Delete an existing reward.
-        
+
         Args:
             reward: Reward text to delete
             tier: Reward tier ('small', 'medium', or 'large')
@@ -681,11 +686,11 @@ class RewardsModule:
 
             # Refresh the rewards display
             self.show_rewards()
-            
+
     def claim_reward(self, window):
         """
         Process reward claim with pixel art styling.
-        
+
         Args:
             window: Parent window for the claim dialog
         """
@@ -723,7 +728,9 @@ class RewardsModule:
         ).pack(pady=10)
 
         # Select tier
-        tier_frame = tk.Frame(claim_window, bg=self.theme.bg_color, relief=tk.RIDGE, bd=3)
+        tier_frame = tk.Frame(
+            claim_window, bg=self.theme.bg_color, relief=tk.RIDGE, bd=3
+        )
         tier_frame.pack(pady=10, fill=tk.X, padx=20)
 
         tk.Label(
@@ -767,11 +774,11 @@ class RewardsModule:
             color="#E91E63",
         )
         submit_button.pack(pady=20)
-        
+
     def process_reward_claim(self, window, tier):
         """
         Process reward claim.
-        
+
         Args:
             window: Dialog window to close after processing
             tier: Selected reward tier ('small', 'medium', or 'large')
@@ -787,6 +794,7 @@ class RewardsModule:
             self.data["art"]["points"]
             + self.data["korean"]["points"]
             + self.data["french"]["points"]
+            + self.data["diss"]["points"]
         )
         cost = costs[tier]
 
@@ -803,11 +811,13 @@ class RewardsModule:
 
         art_deduction = int(cost * art_ratio)
         korean_deduction = int(cost * korean_ratio)
-        french_deduction = cost - art_deduction - korean_deduction
+        french_deduction = int(cost * french_ratio)
+        diss_deduction = cost - art_deduction - korean_deduction - french_deduction
 
         self.data["art"]["points"] -= art_deduction
         self.data["korean"]["points"] -= korean_deduction
         self.data["french"]["points"] -= french_deduction
+        self.data["diss"]["points"] -= diss_deduction
 
         # Add to unlocked rewards
         if "unlocked_rewards" not in self.data:
