@@ -300,7 +300,7 @@ class QuestGame:
             text="Habit Tracker",
             font=self.theme.pixel_font,
             bg=self.theme.bg_color,
-            fg="#673AB7",  # Purple color for habit tracker
+            fg=self.theme.habit_color,  # Use theme color
         )
         habit_label.pack(pady=5)
 
@@ -337,13 +337,6 @@ class QuestGame:
         progress_frame = tk.Frame(habit_frame, bg=self.theme.bg_color)
         progress_frame.pack(fill=tk.X, padx=20, pady=5)
         
-        progress_bg = tk.Frame(
-            progress_frame,
-            bg=self.theme.darken_color(self.theme.primary_color),
-            height=10,
-        )
-        progress_bg.pack(fill=tk.X)
-        
         # Use a fixed width for the progress bar to avoid the issue with winfo_reqwidth returning 1
         total_width = 300
         progress_width = int((completion_pct / 100) * total_width)
@@ -369,7 +362,7 @@ class QuestGame:
             habit_frame,
             "Open Habit Tracker",
             lambda: self.show_module("habits"),
-            color="#673AB7",  # Purple
+            color=self.theme.habit_color,  # Use theme color
         )
         habit_button.pack(pady=5)
 
