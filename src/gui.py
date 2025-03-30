@@ -77,7 +77,7 @@ class QuestGame:
         Show the selected module interface.
 
         Args:
-            module_name: Name of the module to show ('art', 'korean', 'french', 'diss', 'habits', or 'todo')
+            module_name: Name of the module to show ('art', 'korean', 'french', 'diss', 'habits', 'todo', or 'pomodoro')
         """
         self.clear_frame()
 
@@ -89,6 +89,7 @@ class QuestGame:
             "diss": self.diss_module,
             "habits": self.habit_tracker,
             "todo": self.todo_list,
+            "pomodoro": self.pomodoro_module,  # Added pomodoro module
         }
 
         # Display the selected module
@@ -729,7 +730,7 @@ class QuestGame:
                         date_text = f"⚠️ {due_date_obj.strftime('%m/%d')}"
                     elif due_date_obj == today_date:
                         date_color = "#FF9800"  # Orange for today
-                        date_text = f"Today"
+                        date_text = "Today"
                     else:
                         date_color = self.theme.text_color
                         date_text = due_date_obj.strftime("%m/%d")
@@ -848,5 +849,27 @@ class QuestGame:
         # Save data
         self.data_manager.save_data()
 
+        # Refresh the display
+        self.show_main_menu()
+        
+    def complete_task(self, task_id):
+        """
+        Mark a task as completed.
+        
+        Args:
+            task_id: ID of the task to complete
+        """
+        # Find the task
+        for i, task in enumerate(self.data["todo"]["tasks"]):
+            if task["id"] == task_id:
+                # Mark as completed
+                self.data["todo"]["tasks"][i]["status"] = "completed"
+                # Add completion date
+                self.data["todo"]["tasks"][i]["completion_date"] = datetime.now().strftime("%Y-%m-%d")
+                break
+                
+        # Save data
+        self.data_manager.save_data()
+        
         # Refresh the display
         self.show_main_menu()
