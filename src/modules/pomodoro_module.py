@@ -79,6 +79,7 @@ class PomodoroModule:
         self.todo_tasks_var = None
         self.task_combobox = None
         self.task_label = None
+        self.session_label = None
 
         # Get notification module if available
         self.notification_available = notification is not None
@@ -136,37 +137,12 @@ class PomodoroModule:
             fg=self.theme.text_color,
         ).pack(pady=5)
 
-        # Pack containing frame
-        container = tk.Frame(parent, bg=self.theme.bg_color)
-        container.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
-
-        # Create notebook with tabs
-        tab_control = ttk.Notebook(container)
-        tab_control.pack(expand=1, fill="both")
-
-        # Timer tab
-        timer_tab = tk.Frame(tab_control, bg=self.theme.bg_color)
-
-        # Settings tab
-        settings_tab = tk.Frame(tab_control, bg=self.theme.bg_color)
-
-        # Stats tab
-        stats_tab = tk.Frame(tab_control, bg=self.theme.bg_color)
-
-        # Module integration tab
-        integration_tab = tk.Frame(tab_control, bg=self.theme.bg_color)
-
-        # Add tabs to notebook
-        tab_control.add(timer_tab, text="Timer")
-        tab_control.add(settings_tab, text="Settings")
-        tab_control.add(stats_tab, text="Statistics")
-        tab_control.add(integration_tab, text="Module Integration")
-
-        # Create content for each tab
-        self.create_timer_tab(timer_tab)
-        self.create_settings_tab(settings_tab)
-        self.create_stats_tab(stats_tab)
-        self.create_integration_tab(integration_tab)
+        # Use a single timer tab instead of multiple tabs
+        timer_frame = tk.Frame(parent, bg=self.theme.bg_color)
+        timer_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
+        
+        # Create the timer interface
+        self.create_timer_interface(timer_frame)
 
         # Bottom navigation - return to main menu
         back_button = self.theme.create_pixel_button(
@@ -177,30 +153,30 @@ class PomodoroModule:
         )
         back_button.pack(pady=10)
 
-    def create_timer_tab(self, parent):
+    def create_timer_interface(self, parent):
         """
-        Create the main timer tab with controls.
+        Create the main timer interface with all components.
 
         Args:
-            parent: Parent widget for the timer tab
+            parent: Parent widget for the timer interface
         """
-        # Timer display frame
-        timer_frame = tk.Frame(parent, **self.pixel_border_style)
-        timer_frame.pack(pady=20)
+        # Main timer display frame
+        timer_display_frame = tk.Frame(parent, **self.pixel_border_style)
+        timer_display_frame.pack(pady=20, fill=tk.X)
 
         # Current session type indicator
-        session_label = tk.Label(
-            timer_frame,
+        self.session_label = tk.Label(
+            timer_display_frame,
             text="WORK SESSION" if not self.is_break else "BREAK TIME" if not self.is_long_break else "LONG BREAK",
             font=self.theme.pixel_font,
             bg=self.theme.bg_color,
             fg="#4CAF50" if not self.is_break else "#FF9800" if not self.is_long_break else "#2196F3",
         )
-        session_label.pack(pady=(10, 5))
+        self.session_label.pack(pady=(10, 5))
 
         # Timer display - large, easy to read
         self.timer_label = tk.Label(
-            timer_frame,
+            timer_display_frame,
             text="25:00",
             font=("DS-Digital", 72) if "DS-Digital" in tk.font.families() else ("Courier", 72, "bold"),
             bg=self.theme.bg_color,
@@ -210,7 +186,7 @@ class PomodoroModule:
 
         # Status label with motivational message
         self.status_label = tk.Label(
-            timer_frame,
+            timer_display_frame,
             text="Ready to start",
             font=self.theme.pixel_font,
             bg=self.theme.bg_color,
@@ -232,7 +208,7 @@ class PomodoroModule:
 
         # Progress bar
         self.progress_bar = ttk.Progressbar(
-            timer_frame,
+            timer_display_frame,
             orient="horizontal",
             length=400,
             mode="determinate",
@@ -241,7 +217,7 @@ class PomodoroModule:
         self.progress_bar.pack(pady=10)
 
         # Task selection frame
-        task_frame = tk.Frame(timer_frame, bg=self.theme.bg_color)
+        task_frame = tk.Frame(timer_display_frame, bg=self.theme.bg_color)
         task_frame.pack(pady=10, fill=tk.X)
 
         # Task selection label
@@ -279,7 +255,7 @@ class PomodoroModule:
 
         # Daily pomodoro count
         daily_count_label = tk.Label(
-            timer_frame,
+            timer_display_frame,
             text=f"Pomodoros completed today: {self.completed_today}",
             font=self.theme.small_font,
             bg=self.theme.bg_color,
@@ -288,7 +264,7 @@ class PomodoroModule:
         daily_count_label.pack(pady=5)
 
         # Control buttons
-        controls_frame = tk.Frame(timer_frame, bg=self.theme.bg_color)
+        controls_frame = tk.Frame(timer_display_frame, bg=self.theme.bg_color)
         controls_frame.pack(pady=10)
 
         # Start button
@@ -323,7 +299,7 @@ class PomodoroModule:
         self.reset_button.pack(side=tk.LEFT, padx=5)
         self.reset_button.config(state=tk.DISABLED)
 
-        # Skip button (new)
+        # Skip button
         self.skip_button = self.theme.create_pixel_button(
             controls_frame,
             "⏭ Skip",
@@ -336,6 +312,427 @@ class PomodoroModule:
 
         # Set initial timer value
         self.reset_timer_display()
+        
+        # Settings section
+        self.create_settings_section(parent)
+        
+        # Statistics and module integration (condensed)
+        self.create_condensed_stats(parent)
+
+    def create_settings_section(self, parent):
+        """Create a condensed settings section"""
+        settings_frame = tk.LabelFrame(
+            parent,
+            text="⚙️ Timer Settings",
+            font=self.theme.pixel_font,
+            relief=tk.RIDGE,
+            bd=3,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+            padx=10,
+            pady=10,
+        )
+        settings_frame.pack(fill=tk.X, pady=10)
+        
+        # Create three columns
+        columns_frame = tk.Frame(settings_frame, bg=self.theme.bg_color)
+        columns_frame.pack(fill=tk.X, expand=True)
+        
+        # COLUMN 1: Time settings
+        time_frame = tk.Frame(columns_frame, bg=self.theme.bg_color, padx=10)
+        time_frame.grid(row=0, column=0, sticky="nsew")
+        
+        tk.Label(
+            time_frame,
+            text="Duration Settings",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+            anchor="w",
+        ).pack(anchor="w", pady=5)
+        
+        # Work time
+        work_frame = tk.Frame(time_frame, bg=self.theme.bg_color)
+        work_frame.pack(fill=tk.X, pady=2)
+        
+        tk.Label(
+            work_frame,
+            text="Work:",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg="#4CAF50",  # Green
+            width=12,
+            anchor="w",
+        ).pack(side=tk.LEFT)
+        
+        work_time_var = tk.IntVar(value=self.data["pomodoro"]["work_time"])
+        work_time_spinbox = tk.Spinbox(
+            work_frame,
+            from_=1,
+            to=60,
+            textvariable=work_time_var,
+            width=3,
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+            buttonbackground=self.theme.primary_color,
+        )
+        work_time_spinbox.pack(side=tk.LEFT)
+        
+        tk.Label(
+            work_frame,
+            text="min",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+        ).pack(side=tk.LEFT)
+        
+        # Function to update work time
+        def update_work_time(*args):
+            self.data["pomodoro"]["work_time"] = work_time_var.get()
+            self.data_manager.save_data()
+            if not self.timer_running:
+                self.reset_timer_display()
+        
+        work_time_var.trace("w", update_work_time)
+        
+        # Break time
+        break_frame = tk.Frame(time_frame, bg=self.theme.bg_color)
+        break_frame.pack(fill=tk.X, pady=2)
+        
+        tk.Label(
+            break_frame,
+            text="Break:",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg="#FF9800",  # Orange
+            width=12,
+            anchor="w",
+        ).pack(side=tk.LEFT)
+        
+        break_time_var = tk.IntVar(value=self.data["pomodoro"]["break_time"])
+        break_time_spinbox = tk.Spinbox(
+            break_frame,
+            from_=1,
+            to=30,
+            textvariable=break_time_var,
+            width=3,
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+            buttonbackground=self.theme.primary_color,
+        )
+        break_time_spinbox.pack(side=tk.LEFT)
+        
+        tk.Label(
+            break_frame,
+            text="min",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+        ).pack(side=tk.LEFT)
+        
+        # Function to update break time
+        def update_break_time(*args):
+            self.data["pomodoro"]["break_time"] = break_time_var.get()
+            self.data_manager.save_data()
+        
+        break_time_var.trace("w", update_break_time)
+        
+        # Long break time
+        long_break_frame = tk.Frame(time_frame, bg=self.theme.bg_color)
+        long_break_frame.pack(fill=tk.X, pady=2)
+        
+        tk.Label(
+            long_break_frame,
+            text="Long break:",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg="#2196F3",  # Blue
+            width=12,
+            anchor="w",
+        ).pack(side=tk.LEFT)
+        
+        long_break_time_var = tk.IntVar(value=self.data["pomodoro"]["long_break_time"])
+        long_break_time_spinbox = tk.Spinbox(
+            long_break_frame,
+            from_=5,
+            to=60,
+            textvariable=long_break_time_var,
+            width=3,
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+            buttonbackground=self.theme.primary_color,
+        )
+        long_break_time_spinbox.pack(side=tk.LEFT)
+        
+        tk.Label(
+            long_break_frame,
+            text="min",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+        ).pack(side=tk.LEFT)
+        
+        # Function to update long break time
+        def update_long_break_time(*args):
+            self.data["pomodoro"]["long_break_time"] = long_break_time_var.get()
+            self.data_manager.save_data()
+        
+        long_break_time_var.trace("w", update_long_break_time)
+        
+        # COLUMN 2: Behavior settings
+        behavior_frame = tk.Frame(columns_frame, bg=self.theme.bg_color, padx=10)
+        behavior_frame.grid(row=0, column=1, sticky="nsew")
+        
+        tk.Label(
+            behavior_frame,
+            text="Behavior Settings",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+            anchor="w",
+        ).pack(anchor="w", pady=5)
+        
+        # Auto-start next session
+        auto_start_var = tk.BooleanVar(value=self.data["pomodoro"]["auto_start"])
+        auto_start_check = tk.Checkbutton(
+            behavior_frame,
+            text="Auto-start next session",
+            variable=auto_start_var,
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+            selectcolor=self.theme.secondary_color,
+            command=lambda: self.update_setting("auto_start", auto_start_var.get()),
+        )
+        auto_start_check.pack(anchor="w", pady=2)
+        
+        # Sound notifications
+        sound_var = tk.BooleanVar(value=self.data["pomodoro"]["sound_enabled"])
+        sound_check = tk.Checkbutton(
+            behavior_frame,
+            text="Enable sound notifications",
+            variable=sound_var,
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+            selectcolor=self.theme.secondary_color,
+            command=lambda: self.update_setting("sound_enabled", sound_var.get()),
+        )
+        sound_check.pack(anchor="w", pady=2)
+        
+        # Long break interval
+        interval_frame = tk.Frame(behavior_frame, bg=self.theme.bg_color)
+        interval_frame.pack(fill=tk.X, pady=2)
+        
+        tk.Label(
+            interval_frame,
+            text="Sessions before long break:",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+            anchor="w",
+        ).pack(side=tk.LEFT)
+        
+        interval_var = tk.IntVar(value=self.data["pomodoro"]["long_break_interval"])
+        interval_spinbox = tk.Spinbox(
+            interval_frame,
+            from_=2,
+            to=10,
+            textvariable=interval_var,
+            width=2,
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+            buttonbackground=self.theme.primary_color,
+        )
+        interval_spinbox.pack(side=tk.LEFT, padx=5)
+        
+        # Function to update interval
+        def update_interval(*args):
+            self.data["pomodoro"]["long_break_interval"] = interval_var.get()
+            self.data_manager.save_data()
+        
+        interval_var.trace("w", update_interval)
+        
+        # COLUMN 3: Module integration
+        integration_frame = tk.Frame(columns_frame, bg=self.theme.bg_color, padx=10)
+        integration_frame.grid(row=0, column=2, sticky="nsew")
+        
+        tk.Label(
+            integration_frame,
+            text="Module Integration",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+            anchor="w",
+        ).pack(anchor="w", pady=5)
+        
+        # Points per pomodoro
+        points_frame = tk.Frame(integration_frame, bg=self.theme.bg_color)
+        points_frame.pack(fill=tk.X, pady=2)
+        
+        tk.Label(
+            points_frame,
+            text="Points per pomodoro:",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+            anchor="w",
+        ).pack(side=tk.LEFT)
+        
+        # Get or set default points value
+        points_value = self.data["pomodoro"].get("points_per_pomodoro", 10)
+        self.data["pomodoro"]["points_per_pomodoro"] = points_value
+        
+        points_var = tk.IntVar(value=points_value)
+        points_spinbox = tk.Spinbox(
+            points_frame,
+            from_=1,
+            to=50,
+            textvariable=points_var,
+            width=2,
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+            buttonbackground=self.theme.primary_color,
+        )
+        points_spinbox.pack(side=tk.LEFT, padx=5)
+        
+        # Function to update points
+        def update_points(*args):
+            self.data["pomodoro"]["points_per_pomodoro"] = points_var.get()
+            self.data_manager.save_data()
+        
+        points_var.trace("w", update_points)
+        
+        # Linked modules with checkboxes
+        modules = [("art", "🎨 Art"), 
+                  ("korean", "🇰🇷 Korean"), 
+                  ("french", "🇫🇷 French"), 
+                  ("diss", "📚 Diss")]
+        
+        # Get currently linked modules
+        linked_modules = self.data["pomodoro"].get("linked_modules", {})
+        
+        # Create a frame for the checkboxes
+        modules_frame = tk.Frame(integration_frame, bg=self.theme.bg_color)
+        modules_frame.pack(fill=tk.X, pady=2)
+        
+        # Display checkboxes in a grid (2x2)
+        for i, (module_key, module_name) in enumerate(modules):
+            # Create variable and set from saved state
+            var = tk.BooleanVar(value=linked_modules.get(module_key, False))
+            
+            # Create checkbox
+            checkbox = tk.Checkbutton(
+                modules_frame,
+                text=module_name,
+                variable=var,
+                bg=self.theme.bg_color,
+                fg=self.theme.text_color,
+                font=self.theme.small_font,
+                selectcolor=self.theme.secondary_color,
+                command=lambda key=module_key, v=var: self.toggle_module_link(
+                    key, v.get()
+                ),
+            )
+            checkbox.grid(row=i//2, column=i%2, sticky="w", padx=5)
+            
+            # Save reference to variable
+            self.module_checkboxes[module_key] = var
+        
+        # Make all columns equal width
+        columns_frame.columnconfigure(0, weight=1)
+        columns_frame.columnconfigure(1, weight=1)
+        columns_frame.columnconfigure(2, weight=1)
+
+    def create_condensed_stats(self, parent):
+        """Create a condensed statistics display"""
+        stats_frame = tk.LabelFrame(
+            parent,
+            text="📊 Statistics",
+            font=self.theme.pixel_font,
+            relief=tk.RIDGE,
+            bd=3,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+            padx=10,
+            pady=10,
+        )
+        stats_frame.pack(fill=tk.X, pady=10)
+        
+        # Create a horizontal layout for stats
+        stats_row = tk.Frame(stats_frame, bg=self.theme.bg_color)
+        stats_row.pack(fill=tk.X, pady=5)
+        
+        # Total completed pomodoros with icon
+        total_completed = self.data["pomodoro"]["completed_pomodoros"]
+        
+        total_frame = tk.Frame(stats_row, bg=self.theme.bg_color, padx=10)
+        total_frame.pack(side=tk.LEFT, fill=tk.Y, expand=True)
+        
+        tk.Label(
+            total_frame,
+            text="🍅 Total Pomodoros",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+        ).pack(anchor="w")
+        
+        tk.Label(
+            total_frame,
+            text=str(total_completed),
+            font=self.theme.pixel_font,
+            bg=self.theme.bg_color,
+            fg="#4CAF50",  # Green
+        ).pack(anchor="w")
+        
+        # Today's pomodoros
+        today_frame = tk.Frame(stats_row, bg=self.theme.bg_color, padx=10)
+        today_frame.pack(side=tk.LEFT, fill=tk.Y, expand=True)
+        
+        tk.Label(
+            today_frame,
+            text="📅 Today's Pomodoros",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+        ).pack(anchor="w")
+        
+        tk.Label(
+            today_frame,
+            text=str(self.completed_today),
+            font=self.theme.pixel_font,
+            bg=self.theme.bg_color,
+            fg="#FF9800",  # Orange
+        ).pack(anchor="w")
+        
+        # Total focus time
+        total_focus_minutes = total_completed * self.data["pomodoro"]["work_time"]
+        hours = total_focus_minutes // 60
+        minutes = total_focus_minutes % 60
+        
+        focus_frame = tk.Frame(stats_row, bg=self.theme.bg_color, padx=10)
+        focus_frame.pack(side=tk.LEFT, fill=tk.Y, expand=True)
+        
+        tk.Label(
+            focus_frame,
+            text="⏱️ Total Focus Time",
+            font=self.theme.small_font,
+            bg=self.theme.bg_color,
+            fg=self.theme.text_color,
+        ).pack(anchor="w")
+        
+        tk.Label(
+            focus_frame,
+            text=f"{hours}h {minutes}m",
+            font=self.theme.pixel_font,
+            bg=self.theme.bg_color,
+            fg="#2196F3",  # Blue
+        ).pack(anchor="w")
 
     def update_current_task(self, event=None):
         """Update the current task being worked on."""
@@ -356,612 +753,6 @@ class PomodoroModule:
         # Force timer completion
         self.time_left = 0
         self.update_timer()
-
-    def create_settings_tab(self, parent):
-        """
-        Create the settings tab for pomodoro timer.
-
-        Args:
-            parent: Parent widget for the settings tab
-        """
-        # Settings container
-        settings_frame = tk.Frame(parent, bg=self.theme.bg_color)
-        settings_frame.pack(pady=20, fill=tk.BOTH, expand=True)
-
-        # Timer duration settings
-        duration_frame = tk.LabelFrame(
-            settings_frame,
-            text="⏱️ Timer Duration (minutes)",
-            font=self.theme.pixel_font,
-            bg=self.theme.bg_color,
-            fg=self.theme.text_color,
-            padx=10,
-            pady=10,
-            **self.pixel_border_style,
-        )
-        duration_frame.pack(fill=tk.X, padx=10, pady=10)
-
-        # Work time
-        work_frame = tk.Frame(duration_frame, bg=self.theme.bg_color)
-        work_frame.pack(fill=tk.X, pady=5)
-
-        tk.Label(
-            work_frame,
-            text="Work time:",
-            font=self.theme.small_font,
-            bg=self.theme.bg_color,
-            fg="#4CAF50",  # Green for work time
-            width=15,
-            anchor="w",
-        ).pack(side=tk.LEFT)
-
-        work_time_var = tk.IntVar(value=self.data["pomodoro"]["work_time"])
-        work_time_spinbox = tk.Spinbox(
-            work_frame,
-            from_=1,
-            to=60,
-            textvariable=work_time_var,
-            width=5,
-            font=self.theme.small_font,
-            bg=self.theme.bg_color,
-            fg=self.theme.text_color,
-            buttonbackground=self.theme.primary_color,
-        )
-        work_time_spinbox.pack(side=tk.LEFT)
-
-        # Function to update work time
-        def update_work_time(*args):
-            self.data["pomodoro"]["work_time"] = work_time_var.get()
-            self.data_manager.save_data()
-            if not self.timer_running:
-                self.reset_timer_display()
-
-        work_time_var.trace("w", update_work_time)
-
-        # Break time
-        break_frame = tk.Frame(duration_frame, bg=self.theme.bg_color)
-        break_frame.pack(fill=tk.X, pady=5)
-
-        tk.Label(
-            break_frame,
-            text="Short break:",
-            font=self.theme.small_font,
-            bg=self.theme.bg_color,
-            fg="#FF9800",  # Orange for short break
-            width=15,
-            anchor="w",
-        ).pack(side=tk.LEFT)
-
-        break_time_var = tk.IntVar(value=self.data["pomodoro"]["break_time"])
-        break_time_spinbox = tk.Spinbox(
-            break_frame,
-            from_=1,
-            to=30,
-            textvariable=break_time_var,
-            width=5,
-            font=self.theme.small_font,
-            bg=self.theme.bg_color,
-            fg=self.theme.text_color,
-            buttonbackground=self.theme.primary_color,
-        )
-        break_time_spinbox.pack(side=tk.LEFT)
-
-        # Function to update break time
-        def update_break_time(*args):
-            self.data["pomodoro"]["break_time"] = break_time_var.get()
-            self.data_manager.save_data()
-
-        break_time_var.trace("w", update_break_time)
-
-        # Long break time
-        long_break_frame = tk.Frame(duration_frame, bg=self.theme.bg_color)
-        long_break_frame.pack(fill=tk.X, pady=5)
-
-        tk.Label(
-            long_break_frame,
-            text="Long break:",
-            font=self.theme.small_font,
-            bg=self.theme.bg_color,
-            fg="#2196F3",  # Blue for long break
-            width=15,
-            anchor="w",
-        ).pack(side=tk.LEFT)
-
-        long_break_time_var = tk.IntVar(value=self.data["pomodoro"]["long_break_time"])
-        long_break_time_spinbox = tk.Spinbox(
-            long_break_frame,
-            from_=5,
-            to=60,
-            textvariable=long_break_time_var,
-            width=5,
-            font=self.theme.small_font,
-            bg=self.theme.bg_color,
-            fg=self.theme.text_color,
-            buttonbackground=self.theme.primary_color,
-        )
-        long_break_time_spinbox.pack(side=tk.LEFT)
-
-        # Function to update long break time
-        def update_long_break_time(*args):
-            self.data["pomodoro"]["long_break_time"] = long_break_time_var.get()
-            self.data_manager.save_data()
-
-        long_break_time_var.trace("w", update_long_break_time)
-
-        # Long break interval
-        interval_frame = tk.Frame(duration_frame, bg=self.theme.bg_color)
-        interval_frame.pack(fill=tk.X, pady=5)
-
-        tk.Label(
-            interval_frame,
-            text="Pomodoros before long break:",
-            font=self.theme.small_font,
-            bg=self.theme.bg_color,
-            fg=self.theme.text_color,
-            width=25,
-            anchor="w",
-        ).pack(side=tk.LEFT)
-
-        interval_var = tk.IntVar(value=self.data["pomodoro"]["long_break_interval"])
-        interval_spinbox = tk.Spinbox(
-            interval_frame,
-            from_=2,
-            to=10,
-            textvariable=interval_var,
-            width=5,
-            font=self.theme.small_font,
-            bg=self.theme.bg_color,
-            fg=self.theme.text_color,
-            buttonbackground=self.theme.primary_color,
-        )
-        interval_spinbox.pack(side=tk.LEFT)
-
-        # Function to update interval
-        def update_interval(*args):
-            self.data["pomodoro"]["long_break_interval"] = interval_var.get()
-            self.data_manager.save_data()
-
-        interval_var.trace("w", update_interval)
-
-        # Behavior settings
-        behavior_frame = tk.LabelFrame(
-            settings_frame,
-            text="⚙️ Behavior",
-            font=self.theme.pixel_font,
-            bg=self.theme.bg_color,
-            fg=self.theme.text_color,
-            padx=10,
-            pady=10,
-            **self.pixel_border_style,
-        )
-        behavior_frame.pack(fill=tk.X, padx=10, pady=10)
-
-        # Auto-start next session
-        auto_start_var = tk.BooleanVar(value=self.data["pomodoro"]["auto_start"])
-        auto_start_check = tk.Checkbutton(
-            behavior_frame,
-            text="Auto-start next session",
-            variable=auto_start_var,
-            font=self.theme.small_font,
-            bg=self.theme.bg_color,
-            fg=self.theme.text_color,
-            selectcolor=self.theme.secondary_color,
-            command=lambda: self.update_setting("auto_start", auto_start_var.get()),
-        )
-        auto_start_check.pack(anchor="w", pady=5)
-
-        # Sound notifications
-        sound_var = tk.BooleanVar(value=self.data["pomodoro"]["sound_enabled"])
-        sound_check = tk.Checkbutton(
-            behavior_frame,
-            text="Enable sound notifications",
-            variable=sound_var,
-            font=self.theme.small_font,
-            bg=self.theme.bg_color,
-            fg=self.theme.text_color,
-            selectcolor=self.theme.secondary_color,
-            command=lambda: self.update_setting("sound_enabled", sound_var.get()),
-        )
-        sound_check.pack(anchor="w", pady=5)
-
-        # Notification status
-        notification_frame = tk.Frame(behavior_frame, bg=self.theme.bg_color)
-        notification_frame.pack(fill=tk.X, pady=5)
-        
-        if not self.notification_available:
-            notification_note = tk.Label(
-                notification_frame,
-                text="⚠️ Install 'plyer' for desktop notifications\n(pip install plyer)",
-                font=self.theme.small_font,
-                bg=self.theme.bg_color,
-                fg="#FF5722",  # Orange warning color
-            )
-            notification_note.pack(pady=5)
-
-        if not self.sound_available:
-            sound_note = tk.Label(
-                notification_frame,
-                text="⚠️ Sound notifications only available on Windows",
-                font=self.theme.small_font,
-                bg=self.theme.bg_color,
-                fg="#FF5722",  # Orange warning color
-            )
-            sound_note.pack(pady=5)
-
-    def create_stats_tab(self, parent):
-        """
-        Create the statistics tab for the pomodoro timer.
-
-        Args:
-            parent: Parent widget for the statistics tab
-        """
-        # Statistics container
-        stats_frame = tk.Frame(parent, bg=self.theme.bg_color)
-        stats_frame.pack(pady=20, fill=tk.BOTH, expand=True)
-
-        # Current statistics
-        current_stats_frame = tk.LabelFrame(
-            stats_frame,
-            text="📊 Pomodoro Statistics",
-            font=self.theme.pixel_font,
-            bg=self.theme.bg_color,
-            fg=self.theme.text_color,
-            padx=10,
-            pady=10,
-            **self.pixel_border_style,
-        )
-        current_stats_frame.pack(fill=tk.X, padx=10, pady=10)
-
-        # Create a visually appealing stats display
-        stats_display = tk.Frame(current_stats_frame, bg=self.theme.bg_color)
-        stats_display.pack(fill=tk.X, pady=10)
-        
-        # Total completed pomodoros with icon
-        total_completed = self.data["pomodoro"]["completed_pomodoros"]
-        
-        total_frame = tk.Frame(stats_display, bg=self.theme.bg_color)
-        total_frame.pack(fill=tk.X, pady=5)
-        
-        tk.Label(
-            total_frame,
-            text="🍅",
-            font=("Segoe UI Emoji", 16),
-            bg=self.theme.bg_color,
-            fg=self.theme.text_color,
-        ).pack(side=tk.LEFT, padx=5)
-        
-        tk.Label(
-            total_frame,
-            text="Total completed pomodoros:",
-            font=self.theme.small_font,
-            bg=self.theme.bg_color,
-            fg=self.theme.text_color,
-        ).pack(side=tk.LEFT, padx=5)
-        
-        tk.Label(
-            total_frame,
-            text=str(total_completed),
-            font=self.theme.pixel_font,
-            bg=self.theme.bg_color,
-            fg="#4CAF50",  # Green
-        ).pack(side=tk.LEFT, padx=5)
-
-        # Display pomodoros completed today with icon
-        today_frame = tk.Frame(stats_display, bg=self.theme.bg_color)
-        today_frame.pack(fill=tk.X, pady=5)
-        
-        tk.Label(
-            today_frame,
-            text="📅",
-            font=("Segoe UI Emoji", 16),
-            bg=self.theme.bg_color,
-            fg=self.theme.text_color,
-        ).pack(side=tk.LEFT, padx=5)
-        
-        tk.Label(
-            today_frame,
-            text="Pomodoros completed today:",
-            font=self.theme.small_font,
-            bg=self.theme.bg_color,
-            fg=self.theme.text_color,
-        ).pack(side=tk.LEFT, padx=5)
-        
-        tk.Label(
-            today_frame,
-            text=str(self.completed_today),
-            font=self.theme.pixel_font,
-            bg=self.theme.bg_color,
-            fg="#FF9800",  # Orange
-        ).pack(side=tk.LEFT, padx=5)
-
-        # Calculate total focused time with icon
-        total_focus_minutes = total_completed * self.data["pomodoro"]["work_time"]
-        hours = total_focus_minutes // 60
-        minutes = total_focus_minutes % 60
-
-        focus_frame = tk.Frame(stats_display, bg=self.theme.bg_color)
-        focus_frame.pack(fill=tk.X, pady=5)
-        
-        tk.Label(
-            focus_frame,
-            text="⏱️",
-            font=("Segoe UI Emoji", 16),
-            bg=self.theme.bg_color,
-            fg=self.theme.text_color,
-        ).pack(side=tk.LEFT, padx=5)
-        
-        tk.Label(
-            focus_frame,
-            text="Total focus time:",
-            font=self.theme.small_font,
-            bg=self.theme.bg_color,
-            fg=self.theme.text_color,
-        ).pack(side=tk.LEFT, padx=5)
-        
-        tk.Label(
-            focus_frame,
-            text=f"{hours} hours and {minutes} minutes",
-            font=self.theme.pixel_font,
-            bg=self.theme.bg_color,
-            fg="#2196F3",  # Blue
-        ).pack(side=tk.LEFT, padx=5)
-
-        # Recent activity section
-        recent_frame = tk.LabelFrame(
-            stats_frame,
-            text="📅 Recent Activity",
-            font=self.theme.pixel_font,
-            bg=self.theme.bg_color,
-            fg=self.theme.text_color,
-            padx=10,
-            pady=10,
-            **self.pixel_border_style,
-        )
-        recent_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-
-        # Create a frame for the daily stats
-        daily_stats_frame = tk.Frame(recent_frame, bg=self.theme.bg_color)
-        daily_stats_frame.pack(fill=tk.BOTH, expand=True, pady=5)
-
-        # Get the last 7 days of activity
-        daily_pomodoros = self.data["pomodoro"].get("daily_pomodoros", {})
-
-        # Create a canvas for the bar chart
-        if daily_pomodoros:
-            # Sort dates in reverse order (most recent first)
-            sorted_dates = sorted(daily_pomodoros.keys(), reverse=True)
-            
-            # Set display dates (last 7 days)
-            display_dates = sorted_dates[:7]
-            
-            # Find the maximum value for scaling
-            max_value = max([daily_pomodoros[date] for date in display_dates]) if display_dates else 0
-            max_value = max(max_value, 1)  # Avoid division by zero
-            
-            # Create a canvas for the chart
-            chart_height = 150
-            chart_canvas = tk.Canvas(
-                daily_stats_frame, 
-                height=chart_height + 50,  # Extra space for labels
-                bg=self.theme.bg_color,
-                bd=0,
-                highlightthickness=0
-            )
-            chart_canvas.pack(fill=tk.X, expand=True, pady=10)
-            
-            # Draw horizontal grid lines
-            for i in range(5):
-                y = chart_height - (i * (chart_height / 4))
-                chart_canvas.create_line(
-                    50, y, 550, y, 
-                    fill=self.theme.darken_color(self.theme.bg_color),
-                    dash=(2, 4)
-                )
-                value = int((i / 4) * max_value)
-                chart_canvas.create_text(
-                    30, y, text=str(value), 
-                    fill=self.theme.text_color,
-                    font=self.theme.small_font
-                )
-            
-            # Draw bars for each date
-            bar_width = 60
-            spacing = 20
-            x_start = 60
-            
-            for i, date in enumerate(display_dates):
-                count = daily_pomodoros[date]
-                bar_height = (count / max_value) * chart_height
-                
-                # Format date for display (MM-DD)
-                try:
-                    date_obj = datetime.strptime(date, "%Y-%m-%d")
-                    display_date = date_obj.strftime("%m-%d")
-                except ValueError:
-                    display_date = date
-                
-                x = x_start + (i * (bar_width + spacing))
-                
-                # Draw the bar
-                chart_canvas.create_rectangle(
-                    x, chart_height,
-                    x + bar_width, chart_height - bar_height,
-                    fill="#4CAF50",
-                    outline=self.theme.text_color,
-                    width=2
-                )
-                
-                # Draw the date label
-                chart_canvas.create_text(
-                    x + bar_width/2, chart_height + 20,
-                    text=display_date,
-                    fill=self.theme.text_color,
-                    font=self.theme.small_font
-                )
-                
-                # Draw the value on top of the bar
-                chart_canvas.create_text(
-                    x + bar_width/2, chart_height - bar_height - 10,
-                    text=str(count),
-                    fill=self.theme.text_color,
-                    font=self.theme.small_font
-                )
-        else:
-            # No data message
-            tk.Label(
-                daily_stats_frame,
-                text="No pomodoro history yet. Complete your first pomodoro!",
-                font=self.theme.small_font,
-                bg=self.theme.bg_color,
-                fg=self.theme.text_color,
-            ).pack(pady=20)
-
-    def create_integration_tab(self, parent):
-        """
-        Create the module integration tab.
-
-        Args:
-            parent: Parent widget for the integration tab
-        """
-        # Module integration container
-        integration_frame = tk.Frame(parent, bg=self.theme.bg_color)
-        integration_frame.pack(pady=20, fill=tk.BOTH, expand=True)
-
-        # Explanation label
-        tk.Label(
-            integration_frame,
-            text="🔄 Link the Pomodoro Timer with your skill modules",
-            font=self.theme.pixel_font,
-            bg=self.theme.bg_color,
-            fg=self.theme.text_color,
-        ).pack(pady=5)
-
-        explanation_frame = tk.Frame(integration_frame, bg=self.theme.bg_color, relief=tk.RIDGE, bd=2)
-        explanation_frame.pack(fill=tk.X, padx=20, pady=10)
-        
-        tk.Label(
-            explanation_frame,
-            text="When you complete a pomodoro, selected modules will automatically\n"
-            "record progress toward their daily goals.",
-            font=self.theme.small_font,
-            bg=self.theme.bg_color,
-            fg=self.theme.text_color,
-            justify=tk.LEFT,
-            padx=10,
-            pady=10,
-        ).pack()
-
-        # Module selection frame
-        self.module_integration_frame = tk.LabelFrame(
-            integration_frame,
-            text="🔗 Link with Modules",
-            font=self.theme.pixel_font,
-            bg=self.theme.bg_color,
-            fg=self.theme.text_color,
-            padx=10,
-            pady=10,
-            **self.pixel_border_style,
-        )
-        self.module_integration_frame.pack(fill=tk.X, padx=10, pady=10)
-
-        # Add checkboxes for each module
-        modules = [("art", "🎨 Art Quest"), 
-                  ("korean", "🇰🇷 Korean Quest"), 
-                  ("french", "🇫🇷 French Quest"), 
-                  ("diss", "📚 Diss Quest")]
-
-        # Get currently linked modules
-        linked_modules = self.data["pomodoro"].get("linked_modules", {})
-
-        # Use grid layout for better organization
-        for i, (module_key, module_name) in enumerate(modules):
-            # Create variable and set from saved state
-            var = tk.BooleanVar(value=linked_modules.get(module_key, False))
-
-            # Module frame with colored border based on theme
-            module_frame = tk.Frame(
-                self.module_integration_frame,
-                bg=self.theme.bg_color,
-                relief=tk.RIDGE,
-                bd=2,
-                padx=5,
-                pady=5,
-            )
-            module_frame.grid(row=i//2, column=i%2, sticky="ew", padx=10, pady=5)
-
-            # Create checkbox
-            checkbox = tk.Checkbutton(
-                module_frame,
-                text=module_name,
-                variable=var,
-                bg=self.theme.bg_color,
-                fg=self.theme.text_color,
-                font=self.theme.small_font,
-                selectcolor=self.theme.secondary_color,
-                command=lambda key=module_key, v=var: self.toggle_module_link(
-                    key, v.get()
-                ),
-            )
-            checkbox.pack(fill=tk.X, padx=5, pady=5)
-
-            # Save reference to variable
-            self.module_checkboxes[module_key] = var
-
-        # Configure grid to expand properly
-        self.module_integration_frame.columnconfigure(0, weight=1)
-        self.module_integration_frame.columnconfigure(1, weight=1)
-
-        # Points per pomodoro frame
-        points_frame = tk.LabelFrame(
-            integration_frame,
-            text="⚡ Progress Settings",
-            font=self.theme.pixel_font,
-            bg=self.theme.bg_color,
-            fg=self.theme.text_color,
-            padx=10,
-            pady=10,
-            **self.pixel_border_style,
-        )
-        points_frame.pack(fill=tk.X, padx=10, pady=10)
-
-        # Points per pomodoro
-        points_setting_frame = tk.Frame(points_frame, bg=self.theme.bg_color)
-        points_setting_frame.pack(fill=tk.X, pady=5)
-
-        tk.Label(
-            points_setting_frame,
-            text="Points per completed pomodoro:",
-            font=self.theme.small_font,
-            bg=self.theme.bg_color,
-            fg=self.theme.text_color,
-            width=25,
-            anchor="w",
-        ).pack(side=tk.LEFT)
-
-        # Get or set default points value
-        points_value = self.data["pomodoro"].get("points_per_pomodoro", 10)
-        self.data["pomodoro"]["points_per_pomodoro"] = points_value
-
-        points_var = tk.IntVar(value=points_value)
-        points_spinbox = tk.Spinbox(
-            points_setting_frame,
-            from_=1,
-            to=50,
-            textvariable=points_var,
-            width=5,
-            font=self.theme.small_font,
-            bg=self.theme.bg_color,
-            fg=self.theme.text_color,
-            buttonbackground=self.theme.primary_color,
-        )
-        points_spinbox.pack(side=tk.LEFT)
-
-        # Function to update points
-        def update_points(*args):
-            self.data["pomodoro"]["points_per_pomodoro"] = points_var.get()
-            self.data_manager.save_data()
-
-        points_var.trace("w", update_points)
 
     def toggle_module_link(self, module_key, status):
         """
@@ -1014,6 +805,7 @@ class PomodoroModule:
                 # Start a work session
                 self.time_left = self.data["pomodoro"]["work_time"] * 60
                 self.status_label.config(text=random.choice(self.work_messages))
+                self.session_label.config(text="WORK SESSION", fg="#4CAF50")
                 
                 # Update progress bar color
                 style = ttk.Style()
@@ -1026,6 +818,7 @@ class PomodoroModule:
                 if self.is_long_break:
                     self.time_left = self.data["pomodoro"]["long_break_time"] * 60
                     self.status_label.config(text=random.choice(self.break_messages))
+                    self.session_label.config(text="LONG BREAK", fg="#2196F3")
                     
                     # Update progress bar color
                     style = ttk.Style()
@@ -1036,6 +829,7 @@ class PomodoroModule:
                 else:
                     self.time_left = self.data["pomodoro"]["break_time"] * 60
                     self.status_label.config(text=random.choice(self.break_messages))
+                    self.session_label.config(text="BREAK TIME", fg="#FF9800")
                     
                     # Update progress bar color
                     style = ttk.Style()
@@ -1113,15 +907,18 @@ class PomodoroModule:
                 ):
                     self.is_long_break = True
                     self.status_label.config(text="Time for a long break!")
+                    self.session_label.config(text="LONG BREAK", fg="#2196F3")
                 else:
                     self.is_long_break = False
                     self.status_label.config(text="Time for a short break!")
+                    self.session_label.config(text="BREAK TIME", fg="#FF9800")
             else:
                 # Break completed
                 self.is_break = False
                 self.status_label.config(
                     text="Break finished. Ready for next pomodoro!"
                 )
+                self.session_label.config(text="WORK SESSION", fg="#4CAF50")
 
             # Auto-start next session if enabled
             if self.data["pomodoro"]["auto_start"]:
@@ -1185,6 +982,7 @@ class PomodoroModule:
         if not self.is_break:
             minutes = self.data["pomodoro"]["work_time"]
             self.status_label.config(text="Ready to start")
+            self.session_label.config(text="WORK SESSION", fg="#4CAF50")
             
             # Update color for work mode
             self.timer_label.config(fg="#4CAF50")  # Green
@@ -1198,6 +996,7 @@ class PomodoroModule:
             if self.is_long_break:
                 minutes = self.data["pomodoro"]["long_break_time"]
                 self.status_label.config(text="Ready for long break")
+                self.session_label.config(text="LONG BREAK", fg="#2196F3")
                 
                 # Update color for long break
                 self.timer_label.config(fg="#2196F3")  # Blue
@@ -1210,6 +1009,7 @@ class PomodoroModule:
             else:
                 minutes = self.data["pomodoro"]["break_time"]
                 self.status_label.config(text="Ready for break")
+                self.session_label.config(text="BREAK TIME", fg="#FF9800")
                 
                 # Update color for short break
                 self.timer_label.config(fg="#FF9800")  # Orange
